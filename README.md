@@ -1,6 +1,8 @@
 # Piper TTS Web Interface
 
-This is a web interface for Piper Text-to-Speech that provides a modern, user-friendly way to convert text to speech using various voice models.
+This is a simple web interface for [Piper Text-to-Speech](https://github.com/rhasspy/piper) that provides a user-friendly way to convert text to speech using various voice models.
+
+This repo was fully vibe-coded in [Cursor](https://www.cursor.com/).
 
 ## Prerequisites
 
