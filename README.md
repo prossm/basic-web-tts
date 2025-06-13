@@ -6,7 +6,8 @@ This is a web interface for Piper Text-to-Speech that provides a modern, user-fr
 
 1. Python 3.8 or higher
 2. espeak-ng (required for Piper)
-3. Voice models in ONNX format
+3. Git LFS (for managing voice model files)
+4. Voice models in ONNX format
 
 ## Installation
 
@@ -16,8 +17,11 @@ This is a web interface for Piper Text-to-Speech that provides a modern, user-fr
 
    **For macOS:**
    ```bash
-   # Install espeak-ng and build dependencies
-   brew install espeak-ng cmake ninja
+   # Install espeak-ng, git-lfs and build dependencies
+   brew install espeak-ng cmake ninja git-lfs
+   
+   # Initialize Git LFS
+   git lfs install
    
    # Clone and build Piper
    git clone https://github.com/rhasspy/piper.git
@@ -31,8 +35,13 @@ This is a web interface for Piper Text-to-Speech that provides a modern, user-fr
 
    **For Linux:**
    ```bash
+   # Install espeak-ng and git-lfs
    sudo apt-get update
-   sudo apt-get install espeak-ng
+   sudo apt-get install espeak-ng git-lfs
+   
+   # Initialize Git LFS
+   git lfs install
+   
    # For Linux, you'll need to build piper from source
    git clone https://github.com/rhasspy/piper.git
    cd piper
@@ -41,6 +50,16 @@ This is a web interface for Piper Text-to-Speech that provides a modern, user-fr
    cmake -DCMAKE_BUILD_TYPE=Release ..
    cmake --build . --config Release
    cd ../..
+   ```
+
+   **For Windows:**
+   ```bash
+   # Install Git LFS using the installer from https://git-lfs.com
+   # Or using Chocolatey:
+   choco install git-lfs
+   
+   # Initialize Git LFS
+   git lfs install
    ```
 
 2. Install the web interface package:
