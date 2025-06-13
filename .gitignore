@@ -47,6 +47,7 @@ yarn-error.log*
 
 # Project specific
 src/piper_tts_web/output/
+output/
 *.wav
 *.mp3
 *.ogg
