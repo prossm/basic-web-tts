@@ -48,9 +48,7 @@ This is a web interface for Piper Text-to-Speech that provides a modern, user-fr
    pip install -e .
    ```
 
-3. Download voice models:
-   - Visit [Piper's voice repository](https://huggingface.co/rhasspy/piper-voices)
-   - Download the voice models you want to use (they should be in .onnx format)
+3. Download voice files from [Piper Samples](https://rhasspy.github.io/piper-samples/) (you can listen to samples and download the ones you like)
    - Place the downloaded .onnx files and their corresponding .json files in the `models` directory
 
 ### Production Deployment
