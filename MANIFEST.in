@@ -1,0 +1,4 @@
+include README.md
+recursive-include static *
+recursive-include models *.onnx
+recursive-include models *.json 
