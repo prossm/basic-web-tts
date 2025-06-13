@@ -56,4 +56,5 @@ output/
 *.aac
 
 # Piper directory
-piper/ 
+piper/
+piper.tar.gz 
