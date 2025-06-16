@@ -2,12 +2,7 @@ import hashlib
 import json
 import logging
 import os
-import shutil
-import site
 import subprocess
-import sys
-import tempfile
-import time
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -26,6 +21,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Configure logging
+logger = logging.getLogger("piper_tts_web")
 
 # Get the package directory
 PACKAGE_DIR = Path(__file__).parent
