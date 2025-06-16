@@ -2,7 +2,7 @@
 
 This is a simple web interface for [Piper Text-to-Speech](https://github.com/rhasspy/piper) that provides a user-friendly way to convert text to speech using various voice models.
 
-This repo was fully vibe-coded in [Cursor](https://www.cursor.com/).
+This repo was almost entirely vibe-coded in [Cursor](https://www.cursor.com/).
 
 ## Prerequisites
 
