@@ -28,9 +28,5 @@ COPY . .
 # and the 'src' directory, so it can find and install 'piper_tts_web'.
 RUN pip install .
 
-# --- Runtime Configuration ---
-# Expose the port the app runs on
-EXPOSE 8000
-
 # Define the command to run your app using Gunicorn
 CMD ["gunicorn", "piper_tts_web.server:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]

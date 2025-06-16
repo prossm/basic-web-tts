@@ -1,4 +1,9 @@
-include README.md
-recursive-include static *
-recursive-include models *.onnx
-recursive-include models *.json 
+# Include the static directory and all its contents
+graft src/piper_tts_web/static
+
+# Include the models directory and all its contents
+graft src/piper_tts_web/models
+
+# Optional: If you have other data files, include them too.
+# For example, to include all .json files in your package:
+# recursive-include src *.json
