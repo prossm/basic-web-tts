@@ -8,15 +8,24 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory in the container
 WORKDIR /app
 
-# --- Dependency and Package Installation ---
-# Copy setup and requirements files first to leverage Docker cache
-# Make sure gunicorn is in your requirements.txt!
+# --- Dependency Installation ---
+# 1. Copy only the files needed for dependency installation.
+# This leverages Docker's layer cache. This layer only rebuilds
+# if requirements.txt or setup.py change.
 COPY requirements.txt setup.py ./
 
-# Install dependencies from requirements.txt
+# 2. Install external dependencies from requirements.txt
+# (Make sure gunicorn is in this file)
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install the project itself as a package using the corrected setup.py
+# --- Application Code & Installation ---
+# 3. Copy the rest of the application source code into the container.
+# This includes your 'src' directory. The build will re-run from here
+# if you change any of your source code.
+COPY . .
+
+# 4. Install the local project. `pip` now has access to setup.py
+# and the 'src' directory, so it can find and install 'piper_tts_web'.
 RUN pip install .
 
 # --- Runtime Configuration ---
@@ -24,5 +33,4 @@ RUN pip install .
 EXPOSE 8000
 
 # Define the command to run your app using Gunicorn
-# This now works because piper_tts_web is an installed package
 CMD ["gunicorn", "piper_tts_web.server:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
