@@ -21,27 +21,15 @@ RUN wget https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_amd64.t
     # Clean up the downloaded archive to keep the image size small
     rm piper_amd64.tar.gz
 
-# --- Dependency Installation ---
-# 1. Copy only the files needed for dependency installation.
-# This leverages Docker's layer cache. This layer only rebuilds
-# if pyproject.toml or setup.py change.
-COPY pyproject.toml setup.py ./
-
-# 2. Install external dependencies from pyproject.toml
-RUN pip install --no-cache-dir .
-
 # --- Application Code & Installation ---
-# 3. Copy the rest of the application source code into the container.
-# This includes your 'src' directory. The build will re-run from here
-# if you change any of your source code.
+# Copy the entire application code first
 COPY . .
 
 # Ensure that git-lfs is initialized and pulls the necessary files
 RUN git lfs install && git lfs pull
 
-# 4. Install the local project. `pip` now has access to setup.py
-# and the 'src' directory, so it can find and install 'piper_tts_web'.
-RUN pip install -e .
+# Install the project and its dependencies
+RUN pip install --no-cache-dir -e .
 
 # Define the command to run your app using Gunicorn
 CMD ["gunicorn", "piper_tts_web.server:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
