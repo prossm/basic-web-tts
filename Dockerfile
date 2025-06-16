@@ -1,15 +1,14 @@
 FROM python:3.11-slim
 
-
-RUN git lfs fetch
-RUN git lfs pull
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     git-lfs \
     espeak-ng \
     && rm -rf /var/lib/apt/lists/*
+
+RUN git lfs fetch
+RUN git lfs pull
 
 # Set the working directory in the container
 WORKDIR /app
