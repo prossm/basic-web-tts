@@ -1,6 +1,0 @@
-[build]
-  command = "pip install -e ."
-  publish = "src/piper_tts_web/static"
-
-[build.environment]
-  PYTHON_VERSION = "3.8" 
