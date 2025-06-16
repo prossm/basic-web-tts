@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:875850c47403af7fbe464c9b0f8f6cc9fa67cc5bddf399ce4ad1219330d4f336
-size 102
+{
+    "version": "1.0",
+    "services": {
+        "web": {
+            "port": 8000
+        }
+    }
+}
