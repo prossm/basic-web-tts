@@ -7,9 +7,6 @@ RUN apt-get update && apt-get install -y \
     espeak-ng \
     && rm -rf /var/lib/apt/lists/*
 
-RUN git lfs fetch
-RUN git lfs pull
-
 # Set the working directory in the container
 WORKDIR /app
 
@@ -28,6 +25,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # This includes your 'src' directory. The build will re-run from here
 # if you change any of your source code.
 COPY . .
+
+# Ensure that git-lfs is initialized and pulls the necessary files
+RUN git lfs install && git lfs pull
 
 # 4. Install the local project. `pip` now has access to setup.py
 # and the 'src' directory, so it can find and install 'piper_tts_web'.
