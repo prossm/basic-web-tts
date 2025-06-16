@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy project files
-COPY . .
+COPY src/piper_tts_web .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir .
