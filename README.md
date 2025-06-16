@@ -74,7 +74,7 @@ This repo was fully vibe-coded in [Cursor](https://www.cursor.com/).
 
 ### Production Deployment
 
-#### Using Docker
+The application is designed to be deployed using Docker and is configured for deployment on servers running Linux 24.04 or compatible distributions.
 
 1. Build the Docker image:
    ```bash
@@ -86,17 +86,11 @@ This repo was fully vibe-coded in [Cursor](https://www.cursor.com/).
    docker run -p 8000:8000 -v $(pwd)/models:/app/models piper-tts-web
    ```
 
-#### Manual Deployment
-
-1. Install the package:
-   ```bash
-   pip install .
-   ```
-
-2. Start the server with Gunicorn:
-   ```bash
-   gunicorn server:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-   ```
+3. For production deployment:
+   - The application is configured to work with Linux-based infrastructure
+   - Use the provided Dockerfile for consistent deployment
+   - Ensure proper volume mounting for voice models
+   - Configure appropriate environment variables for production settings
 
 ## Usage
 
@@ -169,5 +163,4 @@ This repo was fully vibe-coded in [Cursor](https://www.cursor.com/).
 - Temporary audio files are automatically cleaned up after processing
 - The web interface supports various playback speeds (0.5x to 2x)
 - All processing is done locally on your machine
-- For production deployment, use Gunicorn with multiple workers
 - Docker deployment is recommended for consistent environments 
