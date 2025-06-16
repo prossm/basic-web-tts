@@ -5,10 +5,18 @@ RUN apt-get update && apt-get install -y \
     git \
     git-lfs \
     espeak-ng \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app
+
+RUN wget https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_amd64.tar.gz && \
+    # The --strip-components=1 flag extracts the contents of the 'piper' directory
+    # directly into the current directory (/app), so we get /app/piper, not /app/piper/piper
+    tar -xzvf piper_amd64.tar.gz --strip-components=1 && \
+    # Clean up the downloaded archive to keep the image size small
+    rm piper_amd64.tar.gz
 
 # --- Dependency Installation ---
 # 1. Copy only the files needed for dependency installation.
