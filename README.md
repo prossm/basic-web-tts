@@ -9,7 +9,7 @@ This repo was almost entirely vibe-coded in [Cursor](https://www.cursor.com/).
 1. Python 3.8 or higher
 2. espeak-ng (required for Piper)
 3. Git LFS (for managing voice model files)
-4. Voice models in ONNX format
+4. Voice models in ONNX + JSON format
 
 ## Installation
 
@@ -161,6 +161,7 @@ The application is designed to be deployed using Docker and is configured for de
 
 - The server expects voice model files to be in ONNX format
 - Temporary audio files are automatically cleaned up after processing
-- The web interface supports various playback speeds (0.5x to 2x)
+- The web interface supports various playback speeds (0.25x to 2x)
 - All processing is done locally on your machine
 - Docker deployment is recommended for consistent environments 
+- Consider using [disco](https://disco.cloud/) for production deployments

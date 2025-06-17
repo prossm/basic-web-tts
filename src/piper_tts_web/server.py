@@ -164,7 +164,7 @@ async def synthesize_speech(request: SynthesisRequest):
             "--output_file",
             str(output_file),
             "--espeak-data",
-            "/opt/homebrew/Cellar/espeak-ng/1.52.0/share/espeak-ng-data",
+            "/usr/share/espeak-ng-data",
         ]
 
         logger.info(f"Running command: {' '.join(cmd)}")

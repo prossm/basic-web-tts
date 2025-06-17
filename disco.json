@@ -2,7 +2,11 @@
     "version": "1.0",
     "services": {
         "web": {
-            "port": 8000
+            "port": 8000,
+            "env": {
+                "LOG_LEVEL": "INFO",
+                "MAX_WORKERS": "4"
+            }
         }
     }
 }
