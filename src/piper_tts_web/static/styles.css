@@ -14,7 +14,7 @@
     --background-color: #f8f9fa;
     --text-color: #212529;
     --border-color: #dee2e6;
-    --border-radius: 4px;
+    --border-radius: 8px;
     --spacing: 1rem;
 }
 
@@ -120,8 +120,8 @@ textarea.form-control {
 
 /* Audio Section */
 .audio-section {
-    margin-top: 2rem;
-    padding-top: 2rem;
+    margin-top: 8px;
+    padding-top: 8px;
     border-top: 1px solid var(--border-color);
 }
 
@@ -140,14 +140,14 @@ audio {
     height: 30px;
     background-color: #ddd;
     border: 1px solid #999;
-    border-radius: 4px;
+    border-radius: var(--border-radius);
 }
 
 .progress-fill {
     width: 0%;
     height: 100%;
     background-color: #4CAF50;
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     transition: width 0.3s ease;
 }
 
