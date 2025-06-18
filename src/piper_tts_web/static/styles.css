@@ -163,10 +163,11 @@ audio {
 
 /* Status Messages */
 .status-message {
-    margin: 1rem 0;
+    display: inline-block;
+    margin-left: 1rem;
     padding: 0.75rem;
     border-radius: var(--border-radius);
-    text-align: center;
+    vertical-align: middle;
 }
 
 .status-message.error {
@@ -222,4 +223,10 @@ input[type="range"]::-webkit-slider-thumb {
         flex-direction: column;
         align-items: stretch;
     }
+}
+
+.button-status-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
 } 
