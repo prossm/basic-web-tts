@@ -32,4 +32,4 @@ RUN git lfs install && git lfs pull
 RUN pip install --no-cache-dir -e .
 
 # Define the command to run your app using Gunicorn
-CMD ["gunicorn", "piper_tts_web.server:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "piper_tts_web.server:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout", "600"]
