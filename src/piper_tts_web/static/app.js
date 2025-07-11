@@ -52,6 +52,16 @@ document.addEventListener('DOMContentLoaded', function() {
     async function convertToSpeech() {
         const text = textInput.value.trim();
         const voice = voiceSelect.value;
+
+        // Google Analytics event tracking
+        if (typeof gtag === 'function') {
+            gtag('event', 'convert_to_speech_click', {
+                'event_category': 'TTS',
+                'event_label': voice,
+                'voice': voice,
+                'text_length': text.length
+            });
+        }
         
         if (!text) {
             statusMessage.textContent = 'Please enter some text to convert.';
