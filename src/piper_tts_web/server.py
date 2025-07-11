@@ -37,7 +37,7 @@ MODELS_DIR = PACKAGE_DIR / "models"
 logger.info(f"Models directory: {MODELS_DIR}")
 
 # Output directory for generated audio files
-OUTPUT_DIR = PACKAGE_DIR / "output"
+OUTPUT_DIR = Path("/persistent_output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 
