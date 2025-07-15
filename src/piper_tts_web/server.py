@@ -80,6 +80,13 @@ async def get_index():
         return f.read()
 
 
+@app.get("/about.html", response_class=HTMLResponse)
+async def get_about():
+    """Serve the About page."""
+    with open(PACKAGE_DIR / "static" / "about.html") as f:
+        return f.read()
+
+
 @app.get("/voices")
 async def list_voices():
     """List all available voices."""
