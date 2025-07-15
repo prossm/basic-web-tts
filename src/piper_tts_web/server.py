@@ -75,14 +75,13 @@ def find_piper_executable():
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index():
-    """Serve the main page."""
+    """Serve the main page at /."""
     with open(PACKAGE_DIR / "static" / "index.html") as f:
         return f.read()
 
-
-@app.get("/about.html", response_class=HTMLResponse)
+@app.get("/about", response_class=HTMLResponse)
 async def get_about():
-    """Serve the About page."""
+    """Serve the About page at /about."""
     with open(PACKAGE_DIR / "static" / "about.html") as f:
         return f.read()
 
