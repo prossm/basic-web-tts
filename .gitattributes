@@ -1,3 +1,4 @@
 *.wav filter=lfs diff=lfs merge=lfs -text
 *.onnx filter=lfs diff=lfs merge=lfs -text
 src/piper_tts_web/models/en_US-kristin.onnx filter=lfs diff=lfs merge=lfs -text
+src/piper_tts_web/models/en_us-marcus.onnx filter=lfs diff=lfs merge=lfs -text
