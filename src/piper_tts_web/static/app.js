@@ -228,8 +228,16 @@ document.addEventListener('DOMContentLoaded', function() {
       signupError.style.display = 'none';
       signupCTA.disabled = true;
       try {
+        let actionUrl;
+        if (window.location.hostname === 'basictts.com') {
+          actionUrl = 'https://basictts.com';
+        } else if (window.location.hostname === 'staging.basictts.com') {
+          actionUrl = 'https://staging.basictts.com';
+        } else {
+          actionUrl = window.location.origin;
+        }
         await firebaseAuth.sendSignInLinkToEmail(email, {
-          url: window.location.origin,
+          url: actionUrl,
           handleCodeInApp: true
         });
         window.localStorage.setItem('emailForSignIn', email);
