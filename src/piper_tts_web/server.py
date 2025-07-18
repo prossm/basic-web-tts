@@ -122,7 +122,7 @@ async def save_recording(recording: dict, uid: str = Depends(get_user_uid)):
 
 @app.get("/recordings")
 async def list_recordings(uid: str = Depends(get_user_uid)):
-    print(f"list_recordings called. uid: {uid} db: {db}")
+    logger.info(f"list_recordings called. uid: {uid} db: {db}")
     if not db or not uid:
         raise HTTPException(status_code=401, detail="Unauthorized")
     ref = db.collection("users").document(uid).collection("recordings")
