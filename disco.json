@@ -2,11 +2,7 @@
     "version": "1.0",
     "services": {
         "web": {
-            "port": 8000,
-            "volumes": [{
-                "name": "tts-output",
-                "destinationPath": "/persistent_output"
-            }]
+            "port": 8000
         }
     },
     "env": {

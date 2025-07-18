@@ -126,8 +126,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
+            // Handle Firebase Storage redirect or direct file response
+            let audioUrl;
+            if (response.headers.get('location')) {
+                // Redirect to Firebase Storage URL
+                audioUrl = response.headers.get('location');
+            } else {
+                // Direct file response (fallback)
+                const audioBlob = await response.blob();
+                audioUrl = URL.createObjectURL(audioBlob);
+            }
             
             // Complete progress bar animation
             clearInterval(progressInterval);
@@ -335,11 +343,31 @@ document.addEventListener('DOMContentLoaded', function() {
       recordingsList.innerHTML = '';
       recordings.forEach(rec => {
         const li = document.createElement('li');
-        li.textContent = `${rec.voice || ''}: ${rec.text ? rec.text.slice(0, 40) + (rec.text.length > 40 ? '...' : '') : ''}`;
+        li.style.marginBottom = '1em';
+        li.style.padding = '0.5em';
+        li.style.border = '1px solid #ddd';
+        li.style.borderRadius = '4px';
+        
+        // Voice and text info
+        const infoDiv = document.createElement('div');
+        infoDiv.textContent = `${rec.voice || ''}: ${rec.text ? rec.text.slice(0, 40) + (rec.text.length > 40 ? '...' : '') : ''}`;
+        li.appendChild(infoDiv);
+        
+        // Audio player if we have a URL
+        if (rec.audioUrl) {
+          const audio = document.createElement('audio');
+          audio.controls = true;
+          audio.style.width = '100%';
+          audio.style.marginTop = '0.5em';
+          audio.src = rec.audioUrl;
+          li.appendChild(audio);
+        }
+        
+        // Delete button
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Delete';
         delBtn.className = 'btn btn-secondary';
-        delBtn.style.marginLeft = '1em';
+        delBtn.style.marginTop = '0.5em';
         delBtn.onclick = async () => {
           if (confirm('Delete this recording?')) {
             await fetch(`/recordings/${rec.id}`, {

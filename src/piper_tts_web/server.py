@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import subprocess
+import tempfile
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -12,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore, auth, storage
 import base64
 from typing import Optional
 
@@ -50,12 +51,12 @@ app.mount("/static", StaticFiles(directory=PACKAGE_DIR / "static"), name="static
 MODELS_DIR = PACKAGE_DIR / "models"
 logger.info(f"Models directory: {MODELS_DIR}")
 
-# Output directory for generated audio files
-OUTPUT_DIR = Path("/persistent_output")
-OUTPUT_DIR.mkdir(exist_ok=True)
-
 # Initialize Firebase Admin with service account from env var
 FIREBASE_SERVICE_ACCOUNT_JSON = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+firebase_app = None
+db = None
+bucket = None
+
 if FIREBASE_SERVICE_ACCOUNT_JSON:
     try:
         if FIREBASE_SERVICE_ACCOUNT_JSON.strip().startswith('{'):
@@ -64,14 +65,20 @@ if FIREBASE_SERVICE_ACCOUNT_JSON:
             cred_dict = json.loads(base64.b64decode(FIREBASE_SERVICE_ACCOUNT_JSON).decode('utf-8'))
         logger.info(f"Loaded Firebase service account for project: {cred_dict.get('project_id')}")
         cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
+        firebase_app = firebase_admin.initialize_app(cred, {
+            'storageBucket': os.environ.get("FIREBASE_STORAGE_BUCKET")
+        })
         db = firestore.client()
+        bucket = storage.bucket()
+        logger.info(f"Firebase Storage bucket initialized: {bucket.name}")
     except Exception as e:
         logger.error(f"Failed to load Firebase service account: {e}")
         db = None
+        bucket = None
 else:
     logger.error("FIREBASE_SERVICE_ACCOUNT_JSON not set!")
     db = None
+    bucket = None
 
 # Endpoint to serve Firebase config to frontend
 @app.get("/firebase-config")
@@ -133,7 +140,22 @@ async def list_recordings(uid: str = Depends(get_user_uid)):
 async def delete_recording(recording_id: str, uid: str = Depends(get_user_uid)):
     if not db or not uid:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # Get the recording to find the Firebase Storage file path
     ref = db.collection("users").document(uid).collection("recordings").document(recording_id)
+    recording = ref.get()
+    if recording.exists:
+        recording_data = recording.to_dict()
+        # Delete from Firebase Storage if we have the file path
+        if bucket and recording_data.get("storagePath"):
+            try:
+                blob = bucket.blob(recording_data["storagePath"])
+                blob.delete()
+                logger.info(f"Deleted file from Firebase Storage: {recording_data['storagePath']}")
+            except Exception as e:
+                logger.error(f"Failed to delete file from Firebase Storage: {e}")
+    
+    # Delete from Firestore
     ref.delete()
     return {"status": "deleted"}
 
@@ -239,7 +261,7 @@ async def list_voices():
 
 @app.post("/synthesize")
 async def synthesize_speech(request: SynthesisRequest, req: Request, authorization: Optional[str] = Header(None)):
-    """Synthesize speech from text using the specified voice. If user is authenticated, save recording metadata to Firestore with audio URL."""
+    """Synthesize speech from text using the specified voice. Upload to Firebase Storage and save metadata to Firestore."""
     try:
         logger.info(f"Synthesizing speech for voice: {request.voice}")
         logger.info(f"Text length: {len(request.text)} characters")
@@ -251,77 +273,116 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                 status_code=404, detail=f"Voice {request.voice} not found"
             )
 
-        # Create output file path with a unique name
+        # Create temporary file for audio output
         text_hash = hashlib.md5(request.text.encode()).hexdigest()
-        output_file = OUTPUT_DIR / f"{request.voice}_{text_hash}.wav"
+        filename = f"{request.voice}_{text_hash}.wav"
+        
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+            output_file = Path(temp_file.name)
+            
+            # Get the full path to the piper executable
+            piper_path = find_piper_executable()
+            logger.info(f"Using piper executable: {piper_path}")
 
-        # Get the full path to the piper executable
-        piper_path = find_piper_executable()
-        logger.info(f"Using piper executable: {piper_path}")
+            # Run piper command
+            cmd = [
+                piper_path,
+                "--model",
+                str(voice_file),
+                "--output_file",
+                str(output_file),
+                "--espeak-data",
+                "/usr/share/espeak-ng-data",
+            ]
 
-        # Run piper command
-        cmd = [
-            piper_path,
-            "--model",
-            str(voice_file),
-            "--output_file",
-            str(output_file),
-            "--espeak-data",
-            "/usr/share/espeak-ng-data",
-        ]
+            logger.info(f"Running command: {' '.join(cmd)}")
 
-        logger.info(f"Running command: {' '.join(cmd)}")
+            # Run the command and capture both stdout and stderr
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
 
-        # Run the command and capture both stdout and stderr
-        process = subprocess.Popen(
-            cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+            # Send the text to piper's stdin
+            stdout, stderr = process.communicate(input=request.text)
 
-        # Send the text to piper's stdin
-        stdout, stderr = process.communicate(input=request.text)
+            if process.returncode != 0:
+                logger.error(f"Piper failed with error: {stderr}")
+                raise HTTPException(status_code=500, detail=f"Piper failed: {stderr}")
 
-        if process.returncode != 0:
-            logger.error(f"Piper failed with error: {stderr}")
-            raise HTTPException(status_code=500, detail=f"Piper failed: {stderr}")
+            # Verify the output file exists
+            if not output_file.exists():
+                logger.error(f"Output file not found: {output_file}")
+                raise HTTPException(status_code=500, detail="Failed to generate audio file")
 
-        # Verify the output file exists
-        if not output_file.exists():
-            logger.error(f"Output file not found: {output_file}")
-            raise HTTPException(status_code=500, detail="Failed to generate audio file")
+            logger.info("Speech synthesis completed successfully")
 
-        logger.info("Speech synthesis completed successfully")
+            # Upload to Firebase Storage
+            firebase_url = None
+            storage_path = None
+            
+            if bucket:
+                try:
+                    # Create a unique path in Firebase Storage
+                    storage_path = f"audio/{filename}"
+                    blob = bucket.blob(storage_path)
+                    
+                    # Upload the file
+                    blob.upload_from_filename(str(output_file))
+                    
+                    # Make the blob publicly readable
+                    blob.make_public()
+                    
+                    # Get the public URL
+                    firebase_url = blob.public_url
+                    logger.info(f"Uploaded to Firebase Storage: {firebase_url}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to upload to Firebase Storage: {e}")
+                    # Continue without Firebase Storage if upload fails
+                    firebase_url = None
+                    storage_path = None
 
-        # If user is authenticated, save recording metadata to Firestore
-        if authorization and authorization.startswith("Bearer "):
-            id_token = authorization.split(" ", 1)[1]
+            # If user is authenticated, save recording metadata to Firestore
+            uid = None
+            if authorization and authorization.startswith("Bearer "):
+                id_token = authorization.split(" ", 1)[1]
+                try:
+                    decoded = firebase_admin.auth.verify_id_token(id_token)
+                    uid = decoded["uid"]
+                except Exception:
+                    uid = None
+                    
+            logger.info(f"uid: {uid}")
+            if db and uid:
+                import time
+                recording_doc = {
+                    "id": f"{request.voice}_{text_hash}",
+                    "voice": request.voice,
+                    "text": request.text,
+                    "created": int(time.time()),
+                    "audioUrl": firebase_url,
+                    "storagePath": storage_path
+                }
+                db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
+
+            # Clean up temporary file
             try:
-                decoded = firebase_admin.auth.verify_id_token(id_token)
-                uid = decoded["uid"]
-            except Exception:
-                uid = None
-        logger.info(f"uid: {uid}")
-        if db and uid:
-            # Build public URL to audio file
-            proto = req.headers.get("x-forwarded-proto", req.url.scheme)
-            host = req.headers.get("x-forwarded-host", req.headers.get("host", "localhost"))
-            base_url = f"{proto}://{host}"
-            audio_url = f"{base_url}/output/{output_file.name}"
-            import time
-            recording_doc = {
-                "id": f"{request.voice}_{text_hash}",
-                "voice": request.voice,
-                "text": request.text,
-                "created": int(time.time()),
-                "audioUrl": audio_url
-            }
-            db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
+                output_file.unlink()
+            except Exception as e:
+                logger.warning(f"Failed to clean up temporary file: {e}")
 
-        # Return the generated audio file
-        return FileResponse(output_file, media_type="audio/wav", filename="speech.wav")
+            # Return the audio file as a response
+            if firebase_url:
+                # If we have a Firebase URL, redirect to it
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(url=firebase_url)
+            else:
+                # Fallback: return the file directly (for unauthenticated users or if Firebase upload failed)
+                return FileResponse(output_file, media_type="audio/wav", filename="speech.wav")
 
     except FileNotFoundError as e:
         logger.error(f"File not found error: {e}")
