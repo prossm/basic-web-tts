@@ -144,9 +144,197 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Firebase dynamic config and auth logic
+    let firebaseApp = null;
+    let firebaseAuth = null;
+    let firebaseUser = null;
+    let firebaseIdToken = null;
+
+    async function loadFirebase() {
+      // Dynamically load Firebase SDK
+      if (!window.firebase) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      // Fetch config
+      const res = await fetch('/firebase-config');
+      const config = await res.json();
+      firebaseApp = firebase.initializeApp(config);
+      firebaseAuth = firebase.auth();
+    }
+
+    // UI Elements
+    let signupModal, signupLink, loginLink, closeSignupModal, signupEmail, signupCTA, signupError, signupConfirmation, authLinks, userInfo, recordingsSection, recordingsList;
+
+    function setupAuthUI() {
+      signupModal = document.getElementById('signup-modal');
+      signupLink = document.getElementById('signup-link');
+      loginLink = document.getElementById('login-link');
+      closeSignupModal = document.getElementById('close-signup-modal');
+      signupEmail = document.getElementById('signup-email');
+      signupCTA = document.getElementById('signup-cta');
+      signupError = document.getElementById('signup-error');
+      signupConfirmation = document.getElementById('signup-confirmation');
+      authLinks = document.getElementById('auth-links');
+      userInfo = document.getElementById('user-info');
+      recordingsSection = document.getElementById('recordings-section');
+      recordingsList = document.getElementById('recordings-list');
+
+      // Show modal
+      signupLink.onclick = (e) => { e.preventDefault(); showSignupModal(); };
+      loginLink.onclick = (e) => { e.preventDefault(); showSignupModal(true); };
+      closeSignupModal.onclick = () => { signupModal.style.display = 'none'; resetSignupModal(); };
+      window.onclick = (e) => { if (e.target === signupModal) { signupModal.style.display = 'none'; resetSignupModal(); } };
+      signupCTA.onclick = handleSignup;
+    }
+
+    function showSignupModal(isLogin) {
+      signupModal.style.display = 'flex';
+      signupEmail.value = '';
+      signupError.style.display = 'none';
+      signupConfirmation.style.display = 'none';
+      signupCTA.textContent = isLogin ? 'Send Magic Link' : 'Create Account';
+      signupModal.querySelector('h2').textContent = isLogin ? 'Log In' : 'Sign Up';
+    }
+    function resetSignupModal() {
+      signupEmail.value = '';
+      signupError.style.display = 'none';
+      signupConfirmation.style.display = 'none';
+    }
+
+    function validateEmail(email) {
+      return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+    }
+
+    async function handleSignup() {
+      const email = signupEmail.value.trim();
+      if (!validateEmail(email)) {
+        signupError.textContent = 'Please enter a valid email address.';
+        signupError.style.display = 'block';
+        return;
+      }
+      signupError.style.display = 'none';
+      signupCTA.disabled = true;
+      try {
+        await firebaseAuth.sendSignInLinkToEmail(email, {
+          url: window.location.origin,
+          handleCodeInApp: true
+        });
+        window.localStorage.setItem('emailForSignIn', email);
+        signupConfirmation.style.display = 'block';
+        signupCTA.style.display = 'none';
+        signupEmail.style.display = 'none';
+        signupModal.querySelector('label[for="signup-email"]').style.display = 'none';
+      } catch (err) {
+        signupError.textContent = err.message || 'Failed to send magic link.';
+        signupError.style.display = 'block';
+      } finally {
+        signupCTA.disabled = false;
+      }
+    }
+
+    async function checkMagicLink() {
+      if (firebaseAuth.isSignInWithEmailLink(window.location.href)) {
+        let email = window.localStorage.getItem('emailForSignIn');
+        if (!email) {
+          email = window.prompt('Please provide your email for confirmation');
+        }
+        try {
+          const result = await firebaseAuth.signInWithEmailLink(email, window.location.href);
+          window.localStorage.removeItem('emailForSignIn');
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return result.user;
+        } catch (err) {
+          alert('Sign-in failed: ' + (err.message || 'Unknown error'));
+        }
+      }
+      return null;
+    }
+
+    function updateAuthUI(user) {
+      if (user) {
+        authLinks.style.display = 'none';
+        userInfo.style.display = 'inline';
+        userInfo.innerHTML = `Signed in as <b>${user.email}</b> | <a href="#" id="logout-link">Log Out</a>`;
+        document.getElementById('logout-link').onclick = async (e) => {
+          e.preventDefault();
+          await firebaseAuth.signOut();
+          userInfo.style.display = 'none';
+          authLinks.style.display = 'inline';
+          recordingsSection.style.display = 'none';
+        };
+        recordingsSection.style.display = 'block';
+        loadUserRecordings();
+      } else {
+        userInfo.style.display = 'none';
+        authLinks.style.display = 'inline';
+        recordingsSection.style.display = 'none';
+      }
+    }
+
+    async function loadUserRecordings() {
+      recordingsList.innerHTML = '<li>Loading...</li>';
+      firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+      const res = await fetch('/recordings', {
+        headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+      });
+      if (!res.ok) {
+        recordingsList.innerHTML = '<li>Failed to load recordings.</li>';
+        return;
+      }
+      const recordings = await res.json();
+      if (!recordings.length) {
+        recordingsList.innerHTML = '<li>No recordings yet.</li>';
+        return;
+      }
+      recordingsList.innerHTML = '';
+      recordings.forEach(rec => {
+        const li = document.createElement('li');
+        li.textContent = `${rec.voice || ''}: ${rec.text ? rec.text.slice(0, 40) + (rec.text.length > 40 ? '...' : '') : ''}`;
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.className = 'btn btn-secondary';
+        delBtn.style.marginLeft = '1em';
+        delBtn.onclick = async () => {
+          if (confirm('Delete this recording?')) {
+            await fetch(`/recordings/${rec.id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+            });
+            loadUserRecordings();
+          }
+        };
+        li.appendChild(delBtn);
+        recordingsList.appendChild(li);
+      });
+    }
+
     // Event listeners
     convertButton.addEventListener('click', convertToSpeech);
     
     // Load voices when the page loads
     loadVoices();
+
+    // On DOMContentLoaded, initialize everything
+    (async function() {
+      await loadFirebase();
+      setupAuthUI();
+      firebaseAuth.onAuthStateChanged(user => {
+        firebaseUser = user;
+        updateAuthUI(user);
+      });
+      await checkMagicLink();
+    })();
 }); 

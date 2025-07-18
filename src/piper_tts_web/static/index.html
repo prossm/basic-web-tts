@@ -33,6 +33,11 @@
 <body>
     <nav style="position: absolute; top: 20px; right: 30px;" aria-label="Main navigation">
       <a href="/about" style="text-decoration: none; font-weight: bold; font-size: 1.1em;">About</a>
+      <span id="auth-links" style="margin-left: 2em;">
+        <a href="#" id="signup-link" style="font-weight: bold;">Sign Up</a> |
+        <a href="#" id="login-link">Log In</a>
+      </span>
+      <span id="user-info" style="display:none; margin-left:2em;"></span>
     </nav>
     <div class="container" role="main">
         <img src="/static/rect-black-on-white-basictts-wordmark.png" alt="Basic TTS logo: speech bubble with sound waves and the words 'Basic TTS'" style="display:block; margin: 8px auto 1rem auto; max-width: 350px; width: 100%; height: auto;">
@@ -77,6 +82,27 @@
                 Download Audio
             </a>
         </div>
+    </div>
+    <!-- User Recordings Section -->
+    <div id="recordings-section" style="display:none; max-width:800px; margin:2em auto 0 auto;">
+      <h3>Your Recordings</h3>
+      <ul id="recordings-list" style="list-style:none; padding:0;"></ul>
+    </div>
+    <!-- Sign Up Modal -->
+    <div id="signup-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center;">
+      <div class="modal-content" style="background:#fff; padding:2em; border-radius:10px; max-width:400px; margin:auto; position:relative;">
+        <span id="close-signup-modal" style="position:absolute; top:10px; right:16px; font-size:1.5em; cursor:pointer;">&times;</span>
+        <h2 style="margin-bottom:1em;">Sign Up</h2>
+        <label for="signup-email">Email Address:</label>
+        <input type="email" id="signup-email" class="form-control" style="margin-bottom:1em;" placeholder="you@email.com" />
+        <button id="signup-cta" class="btn btn-primary" style="width:100%;">Create Account</button>
+        <div id="signup-error" style="color:#dc3545; margin-top:0.7em; display:none;"></div>
+        <div style="margin-top:1.2em; color:#888; font-size:0.98em;">By signing up, you agree to the Basic TTS Terms of Service.</div>
+        <div id="signup-confirmation" style="display:none; text-align:center; margin-top:2em;">
+          <div style="font-size:2.5em; color:#4a90e2; margin-bottom:0.5em;">&#9993;</div>
+          <div>A verification email has been sent with a magic link.</div>
+        </div>
+      </div>
     </div>
     <hr style="margin: 2.5em 0 1.5em 0; border: none; border-top: 1px solid #eee;">
     <div style="max-width: 600px; margin: 0 auto; color: #555; font-size: 1.08em; text-align: center;">
