@@ -48,13 +48,20 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # Initialize Firebase Admin with service account from env var
 FIREBASE_SERVICE_ACCOUNT_JSON = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
 if FIREBASE_SERVICE_ACCOUNT_JSON:
-    if FIREBASE_SERVICE_ACCOUNT_JSON.strip().startswith('{'):
-        cred = credentials.Certificate(json.loads(FIREBASE_SERVICE_ACCOUNT_JSON))
-    else:
-        cred = credentials.Certificate(json.loads(base64.b64decode(FIREBASE_SERVICE_ACCOUNT_JSON).decode('utf-8')))
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
+    try:
+        if FIREBASE_SERVICE_ACCOUNT_JSON.strip().startswith('{'):
+            cred_dict = json.loads(FIREBASE_SERVICE_ACCOUNT_JSON)
+        else:
+            cred_dict = json.loads(base64.b64decode(FIREBASE_SERVICE_ACCOUNT_JSON).decode('utf-8'))
+        logger.info(f"Loaded Firebase service account for project: {cred_dict.get('project_id')}")
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+    except Exception as e:
+        logger.error(f"Failed to load Firebase service account: {e}")
+        db = None
 else:
+    logger.error("FIREBASE_SERVICE_ACCOUNT_JSON not set!")
     db = None
 
 # Endpoint to serve Firebase config to frontend
@@ -76,13 +83,17 @@ from fastapi import Depends, Header
 
 # Helper: get user UID from Authorization header (Firebase ID token)
 def get_user_uid(authorization: Optional[str] = Header(None)):
+    logger.info(f"get_user_uid called. Authorization header: {authorization}")
     if not authorization or not authorization.startswith("Bearer "):
+        logger.warning("No or invalid Authorization header.")
         return None
     id_token = authorization.split(" ", 1)[1]
     try:
         decoded = firebase_admin.auth.verify_id_token(id_token)
+        logger.info(f"Token verified for uid: {decoded['uid']}")
         return decoded["uid"]
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to verify ID token: {e}")
         return None
 
 @app.post("/user")
