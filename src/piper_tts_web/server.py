@@ -304,6 +304,7 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                 uid = decoded["uid"]
             except Exception:
                 uid = None
+        logger.info(f"uid: {uid}")
         if db and uid:
             # Build public URL to audio file
             proto = req.headers.get("x-forwarded-proto", req.url.scheme)
