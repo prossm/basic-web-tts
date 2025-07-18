@@ -296,7 +296,6 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
         logger.info("Speech synthesis completed successfully")
 
         # If user is authenticated, save recording metadata to Firestore
-        uid = None
         if authorization and authorization.startswith("Bearer "):
             id_token = authorization.split(" ", 1)[1]
             try:

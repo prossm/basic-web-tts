@@ -8,6 +8,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressContainer = document.querySelector('.progress-container');
     const progressText = document.querySelector('.progress-text');
 
+    // Firebase dynamic config and auth logic
+    let firebaseApp = null;
+    let firebaseAuth = null;
+    let firebaseUser = null;
+    let firebaseIdToken = null;
+
     // Load available voices from the server
     async function loadVoices() {
         try {
@@ -103,10 +109,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
             
             // Send text to server for processing
+            const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
             const response = await fetch('/synthesize', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + firebaseIdToken 
                 },
                 body: JSON.stringify({
                     text: processedText,
@@ -144,11 +152,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Firebase dynamic config and auth logic
-    let firebaseApp = null;
-    let firebaseAuth = null;
-    let firebaseUser = null;
-    let firebaseIdToken = null;
 
     async function loadFirebase() {
       // Dynamically load Firebase SDK
