@@ -30,6 +30,15 @@ app.add_middleware(
 # Configure logging
 logger = logging.getLogger("piper_tts_web")
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    handlers=[
+        logging.FileHandler("/var/log/piper_tts_web.log"),
+        logging.StreamHandler()
+    ]
+)
+
 # Get the package directory
 PACKAGE_DIR = Path(__file__).parent
 logger.info(f"Package directory: {PACKAGE_DIR}")
