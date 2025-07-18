@@ -2,8 +2,6 @@ FROM python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git \
-    git-lfs \
     espeak-ng \
     espeak-ng-data \
     wget \
@@ -25,11 +23,11 @@ RUN wget https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_amd64.t
 # Copy the entire application code first
 COPY . .
 
-# Ensure that git-lfs is initialized and pulls the necessary files
-RUN git lfs install && git lfs pull
-
 # Install the project and its dependencies
 RUN pip install --no-cache-dir -e .
+
+# Download models during container startup
+RUN python download_models.py
 
 # Define the command to run your app using Gunicorn
 CMD ["gunicorn", "piper_tts_web.server:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout", "600"]
