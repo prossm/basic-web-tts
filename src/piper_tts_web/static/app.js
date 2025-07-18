@@ -198,15 +198,37 @@ document.addEventListener('DOMContentLoaded', function() {
       closeSignupModal.onclick = () => { signupModal.style.display = 'none'; resetSignupModal(); };
       window.onclick = (e) => { if (e.target === signupModal) { signupModal.style.display = 'none'; resetSignupModal(); } };
       signupCTA.onclick = handleSignup;
+
+      // Accessibility: allow Enter key to trigger sign up
+      signupEmail.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          signupCTA.click();
+        }
+      });
+
+      // Accessibility: focus management
+      signupModal.addEventListener('transitionend', function() {
+        if (signupModal.style.display === 'flex') {
+          signupEmail.focus();
+        }
+      });
     }
 
     function showSignupModal(isLogin) {
       signupModal.style.display = 'flex';
+      signupModal.setAttribute('aria-modal', 'true');
+      signupModal.setAttribute('role', 'dialog');
+      signupModal.setAttribute('aria-labelledby', 'signup-modal-title');
+      signupEmail.setAttribute('aria-label', 'Email Address');
+      signupCTA.setAttribute('aria-label', isLogin ? 'Send Magic Link' : 'Create Account');
       signupEmail.value = '';
       signupError.style.display = 'none';
       signupConfirmation.style.display = 'none';
       signupCTA.textContent = isLogin ? 'Send Magic Link' : 'Create Account';
+      signupModal.querySelector('h2').id = 'signup-modal-title';
       signupModal.querySelector('h2').textContent = isLogin ? 'Log In' : 'Sign Up';
+      setTimeout(() => signupEmail.focus(), 100);
     }
     function resetSignupModal() {
       signupEmail.value = '';
