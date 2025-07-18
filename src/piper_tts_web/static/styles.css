@@ -230,3 +230,29 @@ input[type="range"]::-webkit-slider-thumb {
     align-items: center;
     margin-bottom: 8px;
 } 
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal[style*="display: flex"] {
+    display: flex !important;
+}
+.modal-content {
+    background: #fff;
+    padding: 2em;
+    border-radius: 10px;
+    max-width: 400px;
+    margin: auto;
+    position: relative;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+} 
