@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import shutil
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -79,6 +80,9 @@ else:
     logger.error("FIREBASE_SERVICE_ACCOUNT_JSON not set!")
     db = None
     bucket = None
+
+# Set the Firebase Storage models path
+FIREBASE_MODELS_PATH = "models/"
 
 # Endpoint to serve Firebase config to frontend
 @app.get("/firebase-config")
@@ -207,183 +211,150 @@ async def get_about():
 
 @app.get("/voices")
 async def list_voices():
-    """List all available voices."""
+    """List all available voices from Firebase Storage."""
     try:
-        logger.info("Listing voices...")
+        logger.info("Listing voices from Firebase Storage...")
         voices = []
-
-        # Check if models directory exists
-        if not MODELS_DIR.exists():
-            logger.error(f"Models directory does not exist: {MODELS_DIR}")
-            raise HTTPException(status_code=500, detail="Models directory not found")
-
-        # List all .onnx files
-        onnx_files = list(MODELS_DIR.glob("*.onnx"))
-        logger.info(
-            f"Found {len(onnx_files)} .onnx files: {[f.name for f in onnx_files]}"
-        )
-
-        for file in onnx_files:
-            # Look for the .onnx.json file
-            json_file = file.with_suffix(".onnx.json")
-
-            logger.info(f"Processing voice file: {file}")
-            logger.info(f"Looking for JSON file: {json_file}")
-
-            if json_file.exists():
+        if not bucket:
+            logger.error("Firebase Storage bucket not initialized.")
+            raise HTTPException(status_code=500, detail="Firebase Storage not available")
+        # List all .onnx files in the models/ folder in the bucket
+        blobs = bucket.list_blobs(prefix=FIREBASE_MODELS_PATH)
+        onnx_files = [blob.name for blob in blobs if blob.name.endswith('.onnx') and not blob.name.endswith('.onnx.json')]
+        logger.info(f"Found {len(onnx_files)} .onnx files in Firebase Storage: {onnx_files}")
+        for onnx_blob_name in onnx_files:
+            base_name = Path(onnx_blob_name).stem
+            json_blob_name = f"{FIREBASE_MODELS_PATH}{base_name}.onnx.json"
+            # Download the .onnx.json metadata file to a temp location
+            with tempfile.NamedTemporaryFile(suffix=".json", delete=True) as temp_json:
                 try:
-                    with open(json_file) as f:
+                    json_blob = bucket.blob(json_blob_name)
+                    if not json_blob.exists():
+                        logger.warning(f"No JSON file found for {onnx_blob_name}")
+                        continue
+                    json_blob.download_to_filename(temp_json.name)
+                    with open(temp_json.name) as f:
                         voice_info = json.load(f)
-                        # Extract language code from filename (e.g., en_GB from en_GB-jenny_dioco-medium.onnx)
-                        language_code = file.stem.split("-")[0]
-                        voice_data = {
-                            "name": file.stem,
-                            "language": language_code,
-                            "description": voice_info.get(
-                                "description", "No description available"
-                            ),
-                        }
-                        voices.append(voice_data)
-                        logger.info(f"Added voice: {voice_data}")
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error reading JSON file {json_file}: {e}")
+                    language_code = base_name.split("-")[0]
+                    voice_data = {
+                        "name": base_name,
+                        "language": language_code,
+                        "description": voice_info.get("description", "No description available"),
+                    }
+                    voices.append(voice_data)
+                    logger.info(f"Added voice: {voice_data}")
                 except Exception as e:
-                    logger.error(f"Error processing voice file {file}: {e}")
-            else:
-                logger.warning(f"No JSON file found for {file}")
-
-        logger.info(f"Returning {len(voices)} voices: {voices}")
+                    logger.error(f"Error processing voice {onnx_blob_name}: {e}")
+        logger.info(f"Returning {len(voices)} voices from Firebase Storage.")
         return voices
     except Exception as e:
-        logger.error(f"Error listing voices: {e}", exc_info=True)
+        logger.error(f"Error listing voices from Firebase Storage: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.post("/synthesize")
 async def synthesize_speech(request: SynthesisRequest, req: Request, authorization: Optional[str] = Header(None)):
-    """Synthesize speech from text using the specified voice. Upload to Firebase Storage and save metadata to Firestore."""
+    """Synthesize speech from text using the specified voice. Download model from Firebase Storage."""
     try:
-        logger.info(f"Synthesizing speech for voice: {request.voice}")
-        logger.info(f"Text length: {len(request.text)} characters")
-
-        # Validate voice file exists
-        voice_file = MODELS_DIR / f"{request.voice}.onnx"
-        if not voice_file.exists():
-            raise HTTPException(
-                status_code=404, detail=f"Voice {request.voice} not found"
-            )
-
-        # Create temporary file for audio output
-        text_hash = hashlib.md5(request.text.encode()).hexdigest()
-        filename = f"{request.voice}_{text_hash}.wav"
-        
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            output_file = Path(temp_file.name)
-            
-            # Get the full path to the piper executable
-            piper_path = find_piper_executable()
-            logger.info(f"Using piper executable: {piper_path}")
-
-            # Run piper command
-            cmd = [
-                piper_path,
-                "--model",
-                str(voice_file),
-                "--output_file",
-                str(output_file),
-                "--espeak-data",
-                "/usr/share/espeak-ng-data",
-            ]
-
-            logger.info(f"Running command: {' '.join(cmd)}")
-
-            # Run the command and capture both stdout and stderr
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-
-            # Send the text to piper's stdin
-            stdout, stderr = process.communicate(input=request.text)
-
-            if process.returncode != 0:
-                logger.error(f"Piper failed with error: {stderr}")
-                raise HTTPException(status_code=500, detail=f"Piper failed: {stderr}")
-
-            # Verify the output file exists
-            if not output_file.exists():
-                logger.error(f"Output file not found: {output_file}")
-                raise HTTPException(status_code=500, detail="Failed to generate audio file")
-
-            logger.info("Speech synthesis completed successfully")
-
-            # Upload to Firebase Storage
-            firebase_url = None
-            storage_path = None
-            
-            if bucket:
+        logger.info(f"Synthesize: Downloading model for voice: {request.voice}")
+        if not bucket:
+            raise HTTPException(status_code=500, detail="Firebase Storage not available")
+        # Download the .onnx model and .onnx.json metadata from Firebase Storage
+        onnx_blob_name = f"{FIREBASE_MODELS_PATH}{request.voice}.onnx"
+        json_blob_name = f"{FIREBASE_MODELS_PATH}{request.voice}.onnx.json"
+        onnx_blob = bucket.blob(onnx_blob_name)
+        json_blob = bucket.blob(json_blob_name)
+        if not onnx_blob.exists():
+            logger.error(f"Model file not found in Firebase Storage: {onnx_blob_name}")
+            raise HTTPException(status_code=404, detail=f"Voice {request.voice} not found")
+        # Download model and json to temp files
+        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as temp_onnx, \
+             tempfile.NamedTemporaryFile(suffix=".json", delete=True) as temp_json:
+            onnx_blob.download_to_filename(temp_onnx.name)
+            logger.info(f"Downloaded model to {temp_onnx.name}")
+            if json_blob.exists():
+                json_blob.download_to_filename(temp_json.name)
+                logger.info(f"Downloaded metadata to {temp_json.name}")
+            # Synthesize as before, but use temp_onnx.name as the model file
+            text_hash = hashlib.md5(request.text.encode()).hexdigest()
+            filename = f"{request.voice}_{text_hash}.wav"
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+                output_file = Path(temp_file.name)
+                piper_path = find_piper_executable()
+                logger.info(f"Using piper executable: {piper_path}")
+                cmd = [
+                    piper_path,
+                    "--model",
+                    str(temp_onnx.name),
+                    "--output_file",
+                    str(output_file),
+                    "--espeak-data",
+                    "/usr/share/espeak-ng-data",
+                ]
+                logger.info(f"Running command: {' '.join(cmd)}")
+                process = subprocess.Popen(
+                    cmd,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                stdout, stderr = process.communicate(input=request.text)
+                if process.returncode != 0:
+                    logger.error(f"Piper failed with error: {stderr}")
+                    raise HTTPException(status_code=500, detail=f"Piper failed: {stderr}")
+                if not output_file.exists():
+                    logger.error(f"Output file not found: {output_file}")
+                    raise HTTPException(status_code=500, detail="Failed to generate audio file")
+                logger.info("Speech synthesis completed successfully")
+                # Upload to Firebase Storage (as before)
+                firebase_url = None
+                storage_path = None
+                if bucket:
+                    try:
+                        storage_path = f"audio/{filename}"
+                        blob = bucket.blob(storage_path)
+                        blob.upload_from_filename(str(output_file))
+                        blob.make_public()
+                        firebase_url = blob.public_url
+                        logger.info(f"Uploaded to Firebase Storage: {firebase_url}")
+                    except Exception as e:
+                        logger.error(f"Failed to upload to Firebase Storage: {e}")
+                        firebase_url = None
+                        storage_path = None
+                # If user is authenticated, save recording metadata to Firestore
+                uid = None
+                if authorization and authorization.startswith("Bearer "):
+                    id_token = authorization.split(" ", 1)[1]
+                    try:
+                        decoded = firebase_admin.auth.verify_id_token(id_token)
+                        uid = decoded["uid"]
+                    except Exception:
+                        uid = None
+                logger.info(f"uid: {uid}")
+                if db and uid:
+                    import time
+                    recording_doc = {
+                        "id": f"{request.voice}_{text_hash}",
+                        "voice": request.voice,
+                        "text": request.text,
+                        "created": int(time.time()),
+                        "audioUrl": firebase_url,
+                        "storagePath": storage_path
+                    }
+                    db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
+                # Clean up temp files
                 try:
-                    # Create a unique path in Firebase Storage
-                    storage_path = f"audio/{filename}"
-                    blob = bucket.blob(storage_path)
-                    
-                    # Upload the file
-                    blob.upload_from_filename(str(output_file))
-                    
-                    # Make the blob publicly readable
-                    blob.make_public()
-                    
-                    # Get the public URL
-                    firebase_url = blob.public_url
-                    logger.info(f"Uploaded to Firebase Storage: {firebase_url}")
-                    
+                    output_file.unlink()
+                    temp_onnx.close()
+                    os.unlink(temp_onnx.name)
                 except Exception as e:
-                    logger.error(f"Failed to upload to Firebase Storage: {e}")
-                    # Continue without Firebase Storage if upload fails
-                    firebase_url = None
-                    storage_path = None
-
-            # If user is authenticated, save recording metadata to Firestore
-            uid = None
-            if authorization and authorization.startswith("Bearer "):
-                id_token = authorization.split(" ", 1)[1]
-                try:
-                    decoded = firebase_admin.auth.verify_id_token(id_token)
-                    uid = decoded["uid"]
-                except Exception:
-                    uid = None
-                    
-            logger.info(f"uid: {uid}")
-            if db and uid:
-                import time
-                recording_doc = {
-                    "id": f"{request.voice}_{text_hash}",
-                    "voice": request.voice,
-                    "text": request.text,
-                    "created": int(time.time()),
-                    "audioUrl": firebase_url,
-                    "storagePath": storage_path
-                }
-                db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
-
-            # Clean up temporary file
-            try:
-                output_file.unlink()
-            except Exception as e:
-                logger.warning(f"Failed to clean up temporary file: {e}")
-
-            # Return the audio file as a response
-            if firebase_url:
-                # If we have a Firebase URL, redirect to it
-                from fastapi.responses import RedirectResponse
-                return RedirectResponse(url=firebase_url)
-            else:
-                # Fallback: return the file directly (for unauthenticated users or if Firebase upload failed)
-                return FileResponse(output_file, media_type="audio/wav", filename="speech.wav")
-
+                    logger.warning(f"Failed to clean up temporary files: {e}")
+                # Return the audio file as a response
+                if firebase_url:
+                    from fastapi.responses import RedirectResponse
+                    return RedirectResponse(url=firebase_url)
+                else:
+                    return FileResponse(output_file, media_type="audio/wav", filename="speech.wav")
     except FileNotFoundError as e:
         logger.error(f"File not found error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
