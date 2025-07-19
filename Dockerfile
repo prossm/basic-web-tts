@@ -26,11 +26,8 @@ COPY . .
 # Install the project and its dependencies
 RUN pip install --no-cache-dir -e .
 
-# Create models directory
-RUN mkdir -p src/piper_tts_web/models
-
 # Make startup script executable
 RUN chmod +x start.sh
 
-# Use the startup script that handles model downloading and server startup
+# Use the startup script that handles server startup
 CMD ["./start.sh"]
