@@ -26,8 +26,11 @@ COPY . .
 # Install the project and its dependencies
 RUN pip install --no-cache-dir -e .
 
-# Download models during container startup
-RUN python download_models.py
+# Create models directory
+RUN mkdir -p src/piper_tts_web/models
 
-# Define the command to run your app using Gunicorn
-CMD ["gunicorn", "piper_tts_web.server:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout", "600"]
+# Make startup script executable
+RUN chmod +x start.sh
+
+# Use the startup script that handles model downloading and server startup
+CMD ["./start.sh"]

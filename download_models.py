@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to download Piper TTS models from HuggingFace and custom models from Firebase Storage.
+Automatically uploads custom models to Firebase Storage if they don't exist.
 """
 
 import os
@@ -58,6 +59,28 @@ def download_from_huggingface(model_name, models_dir):
     
     print(f"✓ Downloaded {model_name}")
 
+def upload_to_firebase(model_name, models_dir, bucket):
+    """Upload a custom model to Firebase Storage."""
+    print(f"Uploading custom model {model_name} to Firebase Storage...")
+    
+    # Upload .onnx file
+    onnx_path = models_dir / f"{model_name}.onnx"
+    if not onnx_path.exists():
+        raise FileNotFoundError(f"Model file not found: {onnx_path}")
+    
+    onnx_blob = bucket.blob(f"models/{model_name}.onnx")
+    onnx_blob.upload_from_filename(str(onnx_path))
+    print(f"✓ Uploaded {model_name}.onnx")
+    
+    # Upload .onnx.json file
+    json_path = models_dir / f"{model_name}.onnx.json"
+    if not json_path.exists():
+        raise FileNotFoundError(f"Model JSON file not found: {json_path}")
+    
+    json_blob = bucket.blob(f"models/{model_name}.onnx.json")
+    json_blob.upload_from_filename(str(json_path))
+    print(f"✓ Uploaded {model_name}.onnx.json")
+
 def download_from_firebase(model_name, models_dir, bucket):
     """Download a custom model from Firebase Storage."""
     print(f"Downloading custom model {model_name} from Firebase Storage...")
@@ -73,6 +96,12 @@ def download_from_firebase(model_name, models_dir, bucket):
     json_blob.download_to_filename(str(json_path))
     
     print(f"✓ Downloaded custom model {model_name}")
+
+def check_firebase_model_exists(model_name, bucket):
+    """Check if a model exists in Firebase Storage."""
+    onnx_blob = bucket.blob(f"models/{model_name}.onnx")
+    json_blob = bucket.blob(f"models/{model_name}.onnx.json")
+    return onnx_blob.exists() and json_blob.exists()
 
 def initialize_firebase():
     """Initialize Firebase Admin SDK."""
@@ -114,16 +143,23 @@ def main():
         except Exception as e:
             print(f"✗ Failed to download {model}: {e}")
     
-    # Initialize Firebase and download custom models
-    print("\n=== Downloading Custom Models ===")
+    # Initialize Firebase and handle custom models
+    print("\n=== Handling Custom Models ===")
     bucket = initialize_firebase()
     
     if bucket:
         for model in CUSTOM_MODELS:
             try:
-                download_from_firebase(model, models_dir, bucket)
+                # Check if model exists in Firebase Storage
+                if check_firebase_model_exists(model, bucket):
+                    # Download from Firebase Storage
+                    download_from_firebase(model, models_dir, bucket)
+                else:
+                    # Upload to Firebase Storage if it doesn't exist
+                    print(f"Custom model {model} not found in Firebase Storage, uploading...")
+                    upload_to_firebase(model, models_dir, bucket)
             except Exception as e:
-                print(f"✗ Failed to download custom model {model}: {e}")
+                print(f"✗ Failed to handle custom model {model}: {e}")
     else:
         print("Skipping custom models (Firebase not available)")
     
