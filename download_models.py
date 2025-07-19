@@ -8,9 +8,10 @@ import os
 import json
 import requests
 import tempfile
+import sys
 from pathlib import Path
 import firebase_admin
-from firebase_admin import credentials, storage
+from firebase_admin import credentials, firestore, storage
 import base64
 
 # Official Piper models to download from HuggingFace
@@ -37,25 +38,37 @@ def download_from_huggingface(model_name, models_dir):
     onnx_url = f"{base_url}/{model_name}.onnx"
     onnx_path = models_dir / f"{model_name}.onnx"
     
-    print(f"Downloading {model_name}.onnx...")
-    response = requests.get(onnx_url, stream=True)
-    response.raise_for_status()
-    
-    with open(onnx_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
+    print(f"Downloading {model_name}.onnx from {onnx_url}...")
+    try:
+        response = requests.get(onnx_url, stream=True, timeout=300)
+        response.raise_for_status()
+        
+        with open(onnx_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        
+        print(f"✓ Downloaded {model_name}.onnx ({onnx_path.stat().st_size / (1024*1024):.1f} MB)")
+    except Exception as e:
+        print(f"✗ Failed to download {model_name}.onnx: {e}")
+        raise
     
     # Download .onnx.json file
     json_url = f"{base_url}/{model_name}.onnx.json"
     json_path = models_dir / f"{model_name}.onnx.json"
     
-    print(f"Downloading {model_name}.onnx.json...")
-    response = requests.get(json_url, stream=True)
-    response.raise_for_status()
-    
-    with open(json_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
+    print(f"Downloading {model_name}.onnx.json from {json_url}...")
+    try:
+        response = requests.get(json_url, stream=True, timeout=60)
+        response.raise_for_status()
+        
+        with open(json_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        
+        print(f"✓ Downloaded {model_name}.onnx.json")
+    except Exception as e:
+        print(f"✗ Failed to download {model_name}.onnx.json: {e}")
+        raise
     
     print(f"✓ Downloaded {model_name}")
 
@@ -133,15 +146,20 @@ def main():
     models_dir = Path("src/piper_tts_web/models")
     models_dir.mkdir(parents=True, exist_ok=True)
     
+    print(f"Models directory: {models_dir.absolute()}")
     print("Starting model download...")
     
     # Download official models from HuggingFace
     print("\n=== Downloading Official Models ===")
+    successful_downloads = 0
     for model in OFFICIAL_MODELS:
         try:
             download_from_huggingface(model, models_dir)
+            successful_downloads += 1
         except Exception as e:
             print(f"✗ Failed to download {model}: {e}")
+    
+    print(f"Successfully downloaded {successful_downloads}/{len(OFFICIAL_MODELS)} official models")
     
     # Initialize Firebase and handle custom models
     print("\n=== Handling Custom Models ===")
@@ -163,14 +181,23 @@ def main():
     else:
         print("Skipping custom models (Firebase not available)")
     
-    print(f"\n✓ Model download complete! Models saved to: {models_dir}")
+    # Final verification
+    onnx_files = list(models_dir.glob("*.onnx"))
+    json_files = list(models_dir.glob("*.onnx.json"))
+    
+    print(f"\n✓ Model download complete!")
+    print(f"Models saved to: {models_dir}")
+    print(f"Found {len(onnx_files)} .onnx files and {len(json_files)} .onnx.json files")
     
     # List downloaded models
     print("\n=== Downloaded Models ===")
-    onnx_files = list(models_dir.glob("*.onnx"))
     for file in sorted(onnx_files):
         size_mb = file.stat().st_size / (1024 * 1024)
         print(f"  {file.name} ({size_mb:.1f} MB)")
+    
+    if len(onnx_files) == 0:
+        print("ERROR: No models were downloaded!")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 
