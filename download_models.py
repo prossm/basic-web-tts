@@ -15,20 +15,37 @@ from firebase_admin import credentials, firestore, storage
 import base64
 
 # Official Piper models to download from HuggingFace
+# These are the models that are actually available in the repository
 OFFICIAL_MODELS = [
     "en_GB-alan-medium",
     "en_GB-alba-medium", 
-    "en_GB-jenny_dioco-medium",
-    "en_GB-northern_english_male-medium",
-    "en_US-amy-medium",
-    "en_US-kathleen-low",
-    "en_US-kristin"
+    "en_GB-jenny_dioco-medium"
 ]
 
 # Custom models (stored in Firebase Storage)
 CUSTOM_MODELS = [
     "en_us-marcus"
 ]
+
+def check_model_availability():
+    """Check which models are actually available in the HuggingFace repository."""
+    print("Checking available models in HuggingFace repository...")
+    base_url = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+    
+    available_models = []
+    for model in OFFICIAL_MODELS:
+        test_url = f"{base_url}/{model}.onnx"
+        try:
+            response = requests.head(test_url, timeout=10)
+            if response.status_code == 200:
+                available_models.append(model)
+                print(f"✓ {model} is available")
+            else:
+                print(f"✗ {model} is not available (status: {response.status_code})")
+        except Exception as e:
+            print(f"✗ {model} check failed: {e}")
+    
+    return available_models
 
 def download_from_huggingface(model_name, models_dir):
     """Download a model from HuggingFace."""
@@ -149,17 +166,20 @@ def main():
     print(f"Models directory: {models_dir.absolute()}")
     print("Starting model download...")
     
+    # Check which models are actually available
+    available_models = check_model_availability()
+    
     # Download official models from HuggingFace
-    print("\n=== Downloading Official Models ===")
+    print(f"\n=== Downloading Official Models ({len(available_models)} available) ===")
     successful_downloads = 0
-    for model in OFFICIAL_MODELS:
+    for model in available_models:
         try:
             download_from_huggingface(model, models_dir)
             successful_downloads += 1
         except Exception as e:
             print(f"✗ Failed to download {model}: {e}")
     
-    print(f"Successfully downloaded {successful_downloads}/{len(OFFICIAL_MODELS)} official models")
+    print(f"Successfully downloaded {successful_downloads}/{len(available_models)} official models")
     
     # Initialize Firebase and handle custom models
     print("\n=== Handling Custom Models ===")
@@ -173,9 +193,9 @@ def main():
                     # Download from Firebase Storage
                     download_from_firebase(model, models_dir, bucket)
                 else:
-                    # Upload to Firebase Storage if it doesn't exist
-                    print(f"Custom model {model} not found in Firebase Storage, uploading...")
-                    upload_to_firebase(model, models_dir, bucket)
+                    # For custom models, we'll skip upload for now since the files aren't in the container
+                    print(f"Custom model {model} not found in Firebase Storage, skipping for now.")
+                    print(f"Note: Custom models need to be uploaded manually using upload_custom_models.py")
             except Exception as e:
                 print(f"✗ Failed to handle custom model {model}: {e}")
     else:
