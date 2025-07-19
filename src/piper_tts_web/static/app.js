@@ -275,16 +275,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (user) {
         authLinks.style.display = 'none';
         userInfo.style.display = 'inline';
-        userInfo.innerHTML = `Signed in as <b>${user.email}</b> | <a href="#" id="logout-link">Log Out</a>`;
-        document.getElementById('logout-link').onclick = async (e) => {
-          e.preventDefault();
-          await firebaseAuth.signOut();
-          userInfo.style.display = 'none';
-          authLinks.style.display = 'inline';
-          recordingsSection.style.display = 'none';
-        };
-        recordingsSection.style.display = 'block';
-        loadUserRecordings();
+        // Show Account link
+        setupAccountUI();
+        recordingsSection.style.display = 'none'; // Hide homepage recordings
       } else {
         userInfo.style.display = 'none';
         authLinks.style.display = 'inline';
@@ -347,6 +340,192 @@ document.addEventListener('DOMContentLoaded', function() {
         li.appendChild(delBtn);
         recordingsList.appendChild(li);
       });
+    }
+
+    // Add Account/Settings UI logic
+    let accountModal, accountLink, accountOptions, logoutButton;
+
+    function createAccountModal() {
+        // If already exists, don't recreate
+        if (document.getElementById('account-modal')) return;
+        const modal = document.createElement('div');
+        modal.id = 'account-modal';
+        modal.className = 'modal';
+        modal.style.display = 'none';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.4)';
+        modal.style.zIndex = '1000';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.innerHTML = `
+          <div class="modal-content" style="background:#fff; padding:2em; border-radius:10px; max-width:400px; margin:auto; position:relative;">
+            <span id="close-account-modal" style="position:absolute; top:10px; right:16px; font-size:1.5em; cursor:pointer;" tabindex="0" aria-label="Close dialog">&times;</span>
+            <h2 style="margin-bottom:1.5em;">Account</h2>
+            <ul id="account-options" style="list-style:none; padding:0; margin:0 0 2em 0;">
+              <li><a href="#" id="my-library-link" class="account-link" style="display:block; padding:0.7em 0;">My Library</a></li>
+              <li><a href="/about" class="account-link" style="display:block; padding:0.7em 0;">About</a></li>
+              <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 0;">Terms of Service</a></li>
+              <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 0;">Privacy Policy</a></li>
+            </ul>
+            <button id="logout-button" class="btn btn-secondary" style="position:fixed; bottom:2em; right:2em; width:calc(100vw - 4em); max-width:360px;">Log Out</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        accountModal = modal;
+        accountOptions = modal.querySelector('#account-options');
+        logoutButton = modal.querySelector('#logout-button');
+        // Close modal logic
+        modal.querySelector('#close-account-modal').onclick = () => { modal.style.display = 'none'; };
+        window.onclick = (e) => { if (e.target === modal) { modal.style.display = 'none'; } };
+    }
+
+    function showAccountModal() {
+        createAccountModal();
+        accountModal.style.display = 'flex';
+    }
+
+    // Add My Library modal logic
+    let libraryModal;
+
+    function createLibraryModal() {
+        if (document.getElementById('library-modal')) return;
+        const modal = document.createElement('div');
+        modal.id = 'library-modal';
+        modal.className = 'modal';
+        modal.style.display = 'none';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.4)';
+        modal.style.zIndex = '1001';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.innerHTML = `
+          <div class="modal-content" style="background:#fff; padding:2em; border-radius:10px; max-width:500px; margin:auto; position:relative; min-height:300px;">
+            <span id="close-library-modal" style="position:absolute; top:10px; right:16px; font-size:1.5em; cursor:pointer;" tabindex="0" aria-label="Close dialog">&times;</span>
+            <h2 style="margin-bottom:1.5em;">My Library</h2>
+            <ul id="library-list" style="list-style:none; padding:0; margin:0;"></ul>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        libraryModal = modal;
+        // Close modal logic
+        modal.querySelector('#close-library-modal').onclick = () => { modal.style.display = 'none'; };
+        window.onclick = (e) => { if (e.target === modal) { modal.style.display = 'none'; } };
+    }
+
+    async function showLibraryModal() {
+        createLibraryModal();
+        libraryModal.style.display = 'flex';
+        const list = libraryModal.querySelector('#library-list');
+        list.innerHTML = '<li>Loading...</li>';
+        try {
+            const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+            const res = await fetch('/recordings', {
+                headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+            });
+            if (!res.ok) {
+                list.innerHTML = '<li>Failed to load recordings.</li>';
+                return;
+            }
+            const recordings = await res.json();
+            if (!recordings.length) {
+                list.innerHTML = '<li>No recordings yet.</li>';
+                return;
+            }
+            list.innerHTML = '';
+            recordings.forEach(rec => {
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.alignItems = 'center';
+                li.style.justifyContent = 'space-between';
+                li.style.padding = '0.7em 0';
+                li.style.borderBottom = '1px solid #eee';
+                // Info
+                const infoDiv = document.createElement('div');
+                infoDiv.style.flex = '1';
+                infoDiv.innerHTML = `
+                  <div style="font-size:0.98em; color:#333;">${formatDateTime(rec.created)}</div>
+                  <div style="font-size:0.97em; color:#666;">${rec.voice || ''}</div>
+                  <div style="font-size:1.05em; color:#222; margin-top:0.2em;">${truncateText(rec.text, 20)}</div>
+                `;
+                li.appendChild(infoDiv);
+                // Icons
+                const iconsDiv = document.createElement('div');
+                iconsDiv.style.display = 'flex';
+                iconsDiv.style.alignItems = 'center';
+                // Play icon (SVG)
+                const playBtn = document.createElement('button');
+                playBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+                playBtn.style.background = 'none';
+                playBtn.style.border = 'none';
+                playBtn.style.cursor = 'pointer';
+                playBtn.style.marginRight = '0.7em';
+                // Kebab icon (SVG)
+                const kebabBtn = document.createElement('button');
+                kebabBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
+                kebabBtn.style.background = 'none';
+                kebabBtn.style.border = 'none';
+                kebabBtn.style.cursor = 'pointer';
+                iconsDiv.appendChild(playBtn);
+                iconsDiv.appendChild(kebabBtn);
+                li.appendChild(iconsDiv);
+                list.appendChild(li);
+            });
+        } catch (err) {
+            list.innerHTML = '<li>Failed to load recordings.</li>';
+        }
+    }
+
+    function formatDateTime(ts) {
+        if (!ts) return '';
+        const d = new Date(ts * 1000);
+        return d.toLocaleString();
+    }
+    function truncateText(txt, n) {
+        if (!txt) return '';
+        return txt.length > n ? txt.slice(0, n) + '…' : txt;
+    }
+
+    // Hook up My Library link in Account modal
+    function setupAccountUI() {
+        // Replace auth links with Account link after login
+        if (!document.getElementById('account-link')) {
+            const nav = document.querySelector('nav');
+            let accountSpan = document.getElementById('user-info');
+            if (!accountSpan) {
+                accountSpan = document.createElement('span');
+                accountSpan.id = 'user-info';
+                nav.appendChild(accountSpan);
+            }
+            accountSpan.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
+            accountLink = document.getElementById('account-link');
+            accountLink.onclick = (e) => { e.preventDefault(); showAccountModal(); };
+        }
+        createAccountModal();
+        // Log Out button logic
+        logoutButton.onclick = async () => {
+            await firebaseAuth.signOut();
+            accountModal.style.display = 'none';
+            userInfo.style.display = 'none';
+            authLinks.style.display = 'inline';
+            recordingsSection.style.display = 'none';
+            // Optionally, reload the page to reset state
+            window.location.href = '/';
+        };
+        // My Library link logic
+        const myLibraryLink = accountModal.querySelector('#my-library-link');
+        myLibraryLink.onclick = (e) => {
+            e.preventDefault();
+            accountModal.style.display = 'none';
+            showLibraryModal();
+        };
     }
 
     // Event listeners
