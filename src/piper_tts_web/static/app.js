@@ -345,47 +345,55 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add Account/Settings UI logic
     let accountModal, accountLink, accountOptions, logoutButton;
 
-    function createAccountModal() {
-        // If already exists, don't recreate
-        if (document.getElementById('account-modal')) return;
-        const modal = document.createElement('div');
-        modal.id = 'account-modal';
-        modal.className = 'modal';
-        modal.style.display = 'none';
-        modal.style.position = 'fixed';
-        modal.style.top = '0';
-        modal.style.left = '0';
-        modal.style.width = '100vw';
-        modal.style.height = '100vh';
-        modal.style.background = 'rgba(0,0,0,0.4)';
-        modal.style.zIndex = '1000';
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
-        modal.innerHTML = `
-          <div class="modal-content" style="background:#fff; padding:2em; border-radius:10px; max-width:400px; margin:auto; position:relative;">
-            <span id="close-account-modal" style="position:absolute; top:10px; right:16px; font-size:1.5em; cursor:pointer;" tabindex="0" aria-label="Close dialog">&times;</span>
-            <h2 style="margin-bottom:1.5em;">Account</h2>
-            <ul id="account-options" style="list-style:none; padding:0; margin:0 0 2em 0;">
-              <li><a href="#" id="my-library-link" class="account-link" style="display:block; padding:0.7em 0;">My Library</a></li>
-              <li><a href="/about" class="account-link" style="display:block; padding:0.7em 0;">About</a></li>
-              <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 0;">Terms of Service</a></li>
-              <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 0;">Privacy Policy</a></li>
-            </ul>
-            <button id="logout-button" class="btn btn-secondary" style="position:fixed; bottom:2em; right:2em; width:calc(100vw - 4em); max-width:360px;">Log Out</button>
-          </div>
+    function createAccountDropdown() {
+        // Remove any existing modal
+        const oldModal = document.getElementById('account-modal');
+        if (oldModal) oldModal.remove();
+        // Find the Account link position
+        const accountLinkEl = document.getElementById('account-link');
+        const rect = accountLinkEl.getBoundingClientRect();
+        // Create dropdown
+        const dropdown = document.createElement('div');
+        dropdown.id = 'account-modal';
+        dropdown.className = 'modal';
+        dropdown.style.display = 'none';
+        dropdown.style.position = 'absolute';
+        dropdown.style.top = (window.scrollY + rect.bottom + 8) + 'px';
+        dropdown.style.left = (window.scrollX + rect.right - 240) + 'px'; // right-align
+        dropdown.style.width = '240px';
+        dropdown.style.background = '#fff';
+        dropdown.style.borderRadius = '10px';
+        dropdown.style.boxShadow = '0 4px 24px rgba(0,0,0,0.13)';
+        dropdown.style.zIndex = '1000';
+        dropdown.style.padding = '1.2em 0 0.5em 0';
+        dropdown.innerHTML = `
+          <ul id="account-options" style="list-style:none; padding:0 0 0.5em 0; margin:0;">
+            <li><a href="#" id="my-library-link" class="account-link" style="display:block; padding:0.7em 1.5em;">My Library</a></li>
+            <li><a href="/about" class="account-link" style="display:block; padding:0.7em 1.5em;">About</a></li>
+            <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 1.5em;">Terms of Service</a></li>
+            <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 1.5em;">Privacy Policy</a></li>
+          </ul>
+          <button id="logout-button" class="btn btn-secondary" style="margin:0.5em 1.5em 0.5em 1.5em; width:calc(100% - 3em);">Log Out</button>
         `;
-        document.body.appendChild(modal);
-        accountModal = modal;
-        accountOptions = modal.querySelector('#account-options');
-        logoutButton = modal.querySelector('#logout-button');
-        // Close modal logic
-        modal.querySelector('#close-account-modal').onclick = () => { modal.style.display = 'none'; };
-        window.onclick = (e) => { if (e.target === modal) { modal.style.display = 'none'; } };
+        document.body.appendChild(dropdown);
+        accountModal = dropdown;
+        accountOptions = dropdown.querySelector('#account-options');
+        logoutButton = dropdown.querySelector('#logout-button');
+        // Close dropdown logic
+        function closeDropdown(e) {
+            if (!dropdown.contains(e.target) && e.target !== accountLinkEl) {
+                dropdown.style.display = 'none';
+                document.removeEventListener('mousedown', closeDropdown);
+            }
+        }
+        setTimeout(() => {
+            document.addEventListener('mousedown', closeDropdown);
+        }, 0);
     }
 
-    function showAccountModal() {
-        createAccountModal();
-        accountModal.style.display = 'flex';
+    function showAccountDropdown() {
+        createAccountDropdown();
+        accountModal.style.display = 'block';
     }
 
     // Add My Library modal logic
@@ -506,9 +514,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             accountSpan.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
             accountLink = document.getElementById('account-link');
-            accountLink.onclick = (e) => { e.preventDefault(); showAccountModal(); };
+            accountLink.onclick = (e) => { e.preventDefault(); showAccountDropdown(); };
         }
-        createAccountModal();
+        createAccountDropdown();
         // Log Out button logic
         logoutButton.onclick = async () => {
             await firebaseAuth.signOut();
@@ -516,7 +524,6 @@ document.addEventListener('DOMContentLoaded', function() {
             userInfo.style.display = 'none';
             authLinks.style.display = 'inline';
             recordingsSection.style.display = 'none';
-            // Optionally, reload the page to reset state
             window.location.href = '/';
         };
         // My Library link logic
