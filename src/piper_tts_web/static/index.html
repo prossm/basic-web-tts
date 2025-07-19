@@ -31,14 +31,21 @@
     <meta name="twitter:image" content="https://basictts.com/static/og-image.png">
 </head>
 <body>
-    <nav style="position: absolute; top: 20px; right: 30px;" aria-label="Main navigation">
-      <a href="/about" style="text-decoration: none; font-weight: bold; font-size: 1.1em;">About</a>
-      <span id="auth-links" style="margin-left: 2em;">
-        <a href="#" id="signup-link" style="font-weight: bold;">Sign Up</a> |
-        <a href="#" id="login-link">Log In</a>
-      </span>
-      <span id="user-info" style="display:none; margin-left:2em;"></span>
-    </nav>
+    <header style="width:100%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.03); position:relative; z-index:10;">
+      <nav style="display:flex; align-items:center; justify-content:space-between; max-width:1200px; margin:0 auto; padding:0.7em 2em;" aria-label="Main navigation">
+        <a href="/" id="logo-link" style="display:flex; align-items:center; text-decoration:none;">
+          <img src="/static/black-transparent-basictts-logo.png" alt="Basic TTS logo" style="height:38px; width:auto; margin-right:0.7em;">
+        </a>
+        <div style="display:flex; align-items:center; gap:2em;">
+          <a href="/about" id="about-link" style="text-decoration:none; font-weight:500; font-size:1.1em; color:#222;">About</a>
+          <span id="auth-links">
+            <a href="#" id="signup-link" style="font-weight: bold;">Sign Up</a> |
+            <a href="#" id="login-link">Log In</a>
+          </span>
+          <span id="user-info" style="display:none;"></span>
+        </div>
+      </nav>
+    </header>
     <div class="container" role="main">
         <img src="/static/rect-black-on-white-basictts-wordmark.png" alt="Basic TTS logo: speech bubble with sound waves and the words 'Basic TTS'" style="display:block; margin: 8px auto 1rem auto; max-width: 350px; width: 100%; height: auto;">
         <h2>Text to Speech Converter</h2>

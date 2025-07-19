@@ -369,7 +369,6 @@ document.addEventListener('DOMContentLoaded', function() {
         dropdown.innerHTML = `
           <ul id="account-options" style="list-style:none; padding:0 0 0.5em 0; margin:0;">
             <li><a href="#" id="my-library-link" class="account-link" style="display:block; padding:0.7em 1.5em;">My Library</a></li>
-            <li><a href="/about" class="account-link" style="display:block; padding:0.7em 1.5em;">About</a></li>
             <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 1.5em;">Terms of Service</a></li>
             <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 1.5em;">Privacy Policy</a></li>
           </ul>
@@ -531,8 +530,115 @@ document.addEventListener('DOMContentLoaded', function() {
         myLibraryLink.onclick = (e) => {
             e.preventDefault();
             accountModal.style.display = 'none';
-            showLibraryModal();
+            showLibraryPage();
         };
+    }
+
+    // 3. Make My Library a page (not a modal)
+    function showLibraryPage() {
+        // Hide main container, show library view
+        document.querySelector('.container').style.display = 'none';
+        let libraryPage = document.getElementById('library-page');
+        if (!libraryPage) {
+            libraryPage = document.createElement('div');
+            libraryPage.id = 'library-page';
+            libraryPage.style.maxWidth = '700px';
+            libraryPage.style.margin = '2em auto';
+            libraryPage.style.background = '#fff';
+            libraryPage.style.borderRadius = '10px';
+            libraryPage.style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)';
+            libraryPage.style.padding = '2em 1.5em 2em 1.5em';
+            libraryPage.innerHTML = `
+              <h2 style="margin-bottom:1.5em;">My Library</h2>
+              <ul id="library-list" style="list-style:none; padding:0; margin:0;"></ul>
+            `;
+            document.body.appendChild(libraryPage);
+        } else {
+            libraryPage.style.display = 'block';
+        }
+        loadLibraryList();
+    }
+
+    async function loadLibraryList() {
+        const list = document.getElementById('library-list');
+        list.innerHTML = '<li>Loading...</li>';
+        try {
+            const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+            const res = await fetch('/recordings', {
+                headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+            });
+            if (!res.ok) {
+                list.innerHTML = '<li>Failed to load recordings.</li>';
+                return;
+            }
+            const recordings = await res.json();
+            if (!recordings.length) {
+                list.innerHTML = '<li>No recordings yet.</li>';
+                return;
+            }
+            list.innerHTML = '';
+            recordings.forEach(rec => {
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.alignItems = 'center';
+                li.style.justifyContent = 'space-between';
+                li.style.padding = '0.7em 0';
+                li.style.borderBottom = '1px solid #eee';
+                // Info
+                const infoDiv = document.createElement('div');
+                infoDiv.style.flex = '1';
+                infoDiv.innerHTML = `
+                  <div style="font-size:0.98em; color:#333;">${formatDateTime(rec.created)}</div>
+                  <div style="font-size:0.97em; color:#666;">${rec.voice || ''}</div>
+                  <div style="font-size:1.05em; color:#222; margin-top:0.2em;">${truncateText(rec.text, 20)}</div>
+                `;
+                li.appendChild(infoDiv);
+                // Icons
+                const iconsDiv = document.createElement('div');
+                iconsDiv.style.display = 'flex';
+                iconsDiv.style.alignItems = 'center';
+                // Play icon (SVG)
+                const playBtn = document.createElement('button');
+                playBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+                playBtn.style.background = 'none';
+                playBtn.style.border = 'none';
+                playBtn.style.cursor = 'pointer';
+                playBtn.style.marginRight = '0.7em';
+                // Kebab icon (SVG)
+                const kebabBtn = document.createElement('button');
+                kebabBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
+                kebabBtn.style.background = 'none';
+                kebabBtn.style.border = 'none';
+                kebabBtn.style.cursor = 'pointer';
+                iconsDiv.appendChild(playBtn);
+                iconsDiv.appendChild(kebabBtn);
+                li.appendChild(iconsDiv);
+                list.appendChild(li);
+            });
+        } catch (err) {
+            list.innerHTML = '<li>Failed to load recordings.</li>';
+        }
+    }
+
+    // 4. Logo click navigates to home
+    const logoLink = document.getElementById('logo-link');
+    if (logoLink) {
+        logoLink.onclick = (e) => {
+            e.preventDefault();
+            if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+                window.location.reload();
+            } else {
+                window.location.href = '/';
+            }
+        };
+    }
+
+    // 5. Nav/header is consistent (handled in index.html)
+
+    // 6. Remove homepage recordings section if present (declare only once)
+    const recordingsSection = document.getElementById('recordings-section');
+    if (recordingsSection) {
+        recordingsSection.style.display = 'none';
     }
 
     // Event listeners
