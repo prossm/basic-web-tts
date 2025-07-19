@@ -56,58 +56,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Convert text to speech using the selected voice
     async function convertToSpeech() {
-        const text = textInput.value.trim();
-        const voice = voiceSelect.value;
-
-        // Google Analytics event tracking
-        if (typeof gtag === 'function') {
-            gtag('event', 'convert_to_speech_click', {
-                'event_category': 'TTS',
-                'event_label': voice,
-                'voice': voice,
-                'text_length': text.length
-            });
-        }
-        
-        if (!text) {
-            statusMessage.textContent = 'Please enter some text to convert.';
-            return;
-        }
-        
-        if (!voice) {
-            statusMessage.textContent = 'Please select a voice.';
-            return;
-        }
-        
         try {
-            statusMessage.textContent = 'Converting text to speech...';
             convertButton.disabled = true;
-            
-            // Initialize progress bar
+            statusMessage.textContent = '';
             progressContainer.style.display = 'block';
             const progressFill = document.querySelector('.progress-fill');
             progressFill.style.width = '0%';
             progressText.textContent = '0%';
-            
-            // Add pauses at line breaks for more natural speech
-            const processedText = text.split('\n').map(line => {
-                // Add extra spaces for empty lines to create longer pauses
-                if (line.trim() === '') {
-                    return '   ';
-                }
-                return line;
-            }).join(' ');
-            
-            // Animate progress bar while processing
             let progress = 0;
             const progressInterval = setInterval(() => {
-                if (progress < 50) {
-                    progress += 0.2;
-                    progressFill.style.width = progress + '%';
-                    progressText.textContent = Math.round(progress) + '%';
-                }
-            }, 100);
-            
+                progress = Math.min(progress + Math.random() * 10, 95);
+                progressFill.style.width = progress + '%';
+                progressText.textContent = Math.floor(progress) + '%';
+            }, 200);
+
+            const voice = voiceSelect.value;
+            const text = textInput.value.trim();
+            if (!voice) {
+                statusMessage.textContent = 'Please select a voice.';
+                convertButton.disabled = false;
+                clearInterval(progressInterval);
+                progressContainer.style.display = 'none';
+                return;
+            }
+            if (!text) {
+                statusMessage.textContent = 'Please enter some text.';
+                convertButton.disabled = false;
+                clearInterval(progressInterval);
+                progressContainer.style.display = 'none';
+                return;
+            }
+
             // Send text to server for processing
             const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
             const response = await fetch('/synthesize', {
@@ -117,37 +96,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Authorization': 'Bearer ' + firebaseIdToken 
                 },
                 body: JSON.stringify({
-                    text: processedText,
+                    text: text,
                     voice: voice
                 })
             });
-            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
-            // Handle Firebase Storage redirect or direct file response
-            let audioUrl;
-            if (response.headers.get('location')) {
-                // Redirect to Firebase Storage URL
-                audioUrl = response.headers.get('location');
-            } else {
-                // Direct file response (fallback)
-                const audioBlob = await response.blob();
-                audioUrl = URL.createObjectURL(audioBlob);
+            const data = await response.json();
+            let audioUrl = data.audioUrl;
+            if (!audioUrl) {
+                throw new Error('No audio URL returned from server.');
             }
-            
             // Complete progress bar animation
             clearInterval(progressInterval);
             progressFill.style.width = '100%';
             progressText.textContent = '100%';
-            
-            // Hide progress bar after a short delay
             setTimeout(() => {
                 progressContainer.style.display = 'none';
             }, 1000);
-            
-            // Play the generated audio
             audioPlayer.src = audioUrl;
             audioPlayer.style.display = 'block';
             statusMessage.textContent = '';

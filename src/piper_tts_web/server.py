@@ -344,8 +344,7 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                 db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
             # Return the audio file as a response
             if firebase_url:
-                from fastapi.responses import RedirectResponse
-                return RedirectResponse(url=firebase_url)
+                return {"audioUrl": firebase_url}
             else:
                 return FileResponse(output_file, media_type="audio/wav", filename="speech.wav")
     except FileNotFoundError as e:
