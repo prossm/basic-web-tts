@@ -266,95 +266,88 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
         if not onnx_blob.exists():
             logger.error(f"Model file not found in Firebase Storage: {onnx_blob_name}")
             raise HTTPException(status_code=404, detail=f"Voice {request.voice} not found")
-        # Download model and json to temp files
-        with tempfile.NamedTemporaryFile(suffix=".onnx", delete=False) as temp_onnx, \
-             tempfile.NamedTemporaryFile(suffix=".json", delete=True) as temp_json:
-            onnx_blob.download_to_filename(temp_onnx.name)
-            logger.info(f"Downloaded model to {temp_onnx.name}")
+        import shutil
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_dir_path = Path(temp_dir)
+            model_filename = f"{request.voice}.onnx"
+            config_filename = f"{request.voice}.onnx.json"
+            model_path = temp_dir_path / model_filename
+            config_path = temp_dir_path / config_filename
+            onnx_blob.download_to_filename(str(model_path))
+            logger.info(f"Downloaded model to {model_path}")
             if json_blob.exists():
-                json_blob.download_to_filename(temp_json.name)
-                logger.info(f"Downloaded metadata to {temp_json.name}")
-            # Synthesize as before, but use temp_onnx.name as the model file
+                json_blob.download_to_filename(str(config_path))
+                logger.info(f"Downloaded metadata to {config_path}")
             text_hash = hashlib.md5(request.text.encode()).hexdigest()
             filename = f"{request.voice}_{text_hash}.wav"
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-                output_file = Path(temp_file.name)
-                piper_path = find_piper_executable()
-                logger.info(f"Using piper executable: {piper_path}")
-                cmd = [
-                    piper_path,
-                    "--model",
-                    str(temp_onnx.name),
-                    "--output_file",
-                    str(output_file),
-                    "--espeak-data",
-                    "/usr/share/espeak-ng-data",
-                ]
-                logger.info(f"Running command: {' '.join(cmd)}")
-                process = subprocess.Popen(
-                    cmd,
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-                stdout, stderr = process.communicate(input=request.text)
-                if process.returncode != 0:
-                    logger.error(f"Piper failed with error: {stderr}")
-                    raise HTTPException(status_code=500, detail=f"Piper failed: {stderr}")
-                if not output_file.exists():
-                    logger.error(f"Output file not found: {output_file}")
-                    raise HTTPException(status_code=500, detail="Failed to generate audio file")
-                logger.info("Speech synthesis completed successfully")
-                # Upload to Firebase Storage (as before)
-                firebase_url = None
-                storage_path = None
-                if bucket:
-                    try:
-                        storage_path = f"audio/{filename}"
-                        blob = bucket.blob(storage_path)
-                        blob.upload_from_filename(str(output_file))
-                        blob.make_public()
-                        firebase_url = blob.public_url
-                        logger.info(f"Uploaded to Firebase Storage: {firebase_url}")
-                    except Exception as e:
-                        logger.error(f"Failed to upload to Firebase Storage: {e}")
-                        firebase_url = None
-                        storage_path = None
-                # If user is authenticated, save recording metadata to Firestore
-                uid = None
-                if authorization and authorization.startswith("Bearer "):
-                    id_token = authorization.split(" ", 1)[1]
-                    try:
-                        decoded = firebase_admin.auth.verify_id_token(id_token)
-                        uid = decoded["uid"]
-                    except Exception:
-                        uid = None
-                logger.info(f"uid: {uid}")
-                if db and uid:
-                    import time
-                    recording_doc = {
-                        "id": f"{request.voice}_{text_hash}",
-                        "voice": request.voice,
-                        "text": request.text,
-                        "created": int(time.time()),
-                        "audioUrl": firebase_url,
-                        "storagePath": storage_path
-                    }
-                    db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
-                # Clean up temp files
+            output_file = temp_dir_path / filename
+            piper_path = find_piper_executable()
+            logger.info(f"Using piper executable: {piper_path}")
+            cmd = [
+                piper_path,
+                "--model",
+                str(model_path),
+                "--output_file",
+                str(output_file),
+                "--espeak-data",
+                "/usr/share/espeak-ng-data",
+            ]
+            logger.info(f"Running command: {' '.join(cmd)}")
+            process = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            stdout, stderr = process.communicate(input=request.text)
+            if process.returncode != 0:
+                logger.error(f"Piper failed with error: {stderr}")
+                raise HTTPException(status_code=500, detail=f"Piper failed: {stderr}")
+            if not output_file.exists():
+                logger.error(f"Output file not found: {output_file}")
+                raise HTTPException(status_code=500, detail="Failed to generate audio file")
+            logger.info("Speech synthesis completed successfully")
+            firebase_url = None
+            storage_path = None
+            if bucket:
                 try:
-                    output_file.unlink()
-                    temp_onnx.close()
-                    os.unlink(temp_onnx.name)
+                    storage_path = f"audio/{filename}"
+                    blob = bucket.blob(storage_path)
+                    blob.upload_from_filename(str(output_file))
+                    blob.make_public()
+                    firebase_url = blob.public_url
+                    logger.info(f"Uploaded to Firebase Storage: {firebase_url}")
                 except Exception as e:
-                    logger.warning(f"Failed to clean up temporary files: {e}")
-                # Return the audio file as a response
-                if firebase_url:
-                    from fastapi.responses import RedirectResponse
-                    return RedirectResponse(url=firebase_url)
-                else:
-                    return FileResponse(output_file, media_type="audio/wav", filename="speech.wav")
+                    logger.error(f"Failed to upload to Firebase Storage: {e}")
+                    firebase_url = None
+                    storage_path = None
+            uid = None
+            if authorization and authorization.startswith("Bearer "):
+                id_token = authorization.split(" ", 1)[1]
+                try:
+                    decoded = firebase_admin.auth.verify_id_token(id_token)
+                    uid = decoded["uid"]
+                except Exception:
+                    uid = None
+            logger.info(f"uid: {uid}")
+            if db and uid:
+                import time
+                recording_doc = {
+                    "id": f"{request.voice}_{text_hash}",
+                    "voice": request.voice,
+                    "text": request.text,
+                    "created": int(time.time()),
+                    "audioUrl": firebase_url,
+                    "storagePath": storage_path
+                }
+                db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
+            # Return the audio file as a response
+            if firebase_url:
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(url=firebase_url)
+            else:
+                return FileResponse(output_file, media_type="audio/wav", filename="speech.wav")
     except FileNotFoundError as e:
         logger.error(f"File not found error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
