@@ -275,13 +275,20 @@ document.addEventListener('DOMContentLoaded', function() {
       if (user) {
         authLinks.style.display = 'none';
         userInfo.style.display = 'inline';
-        // Show Account link
         setupAccountUI();
-        recordingsSection.style.display = 'none'; // Hide homepage recordings
+        // Hide library page if visible
+        var libraryPage = document.getElementById('library-page');
+        if (libraryPage) libraryPage.style.display = 'none';
+        // Hide homepage recordings section if present
+        if (recordingsSection) recordingsSection.style.display = 'none';
       } else {
         userInfo.style.display = 'none';
         authLinks.style.display = 'inline';
-        recordingsSection.style.display = 'none';
+        // Hide library page if visible
+        var libraryPage = document.getElementById('library-page');
+        if (libraryPage) libraryPage.style.display = 'none';
+        // Hide homepage recordings section if present
+        if (recordingsSection) recordingsSection.style.display = 'none';
       }
     }
 
