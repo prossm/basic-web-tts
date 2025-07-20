@@ -208,6 +208,13 @@ async def get_about():
     with open(PACKAGE_DIR / "static" / "about.html") as f:
         return f.read()
 
+@app.get("/library", response_class=HTMLResponse)
+async def get_library():
+    library_path = PACKAGE_DIR / "static" / "library.html"
+    if not library_path.exists():
+        raise HTTPException(status_code=404, detail="Library page not found")
+    return FileResponse(library_path)
+
 
 @app.get("/voices")
 async def list_voices():
