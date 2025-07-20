@@ -34,6 +34,22 @@
       </div>
     </nav>
   </header>
+  <!-- Sign Up Modal (copied from index.html) -->
+  <div id="signup-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center;" aria-modal="true" role="dialog" aria-labelledby="signup-modal-title">
+    <div class="modal-content" style="background:#fff; padding:2em; border-radius:10px; max-width:400px; margin:auto; position:relative;">
+      <span id="close-signup-modal" style="position:absolute; top:10px; right:16px; font-size:1.5em; cursor:pointer;" tabindex="0" aria-label="Close dialog">&times;</span>
+      <h2 id="signup-modal-title" style="margin-bottom:1em;">Sign Up</h2>
+      <label for="signup-email">Email Address:</label>
+      <input type="email" id="signup-email" class="form-control" style="margin-bottom:1em;" placeholder="you@email.com" aria-label="Email Address" />
+      <button id="signup-cta" class="btn btn-primary" style="width:100%;" aria-label="Create Account">Create Account</button>
+      <div id="signup-error" style="color:#dc3545; margin-top:0.7em; display:none;" role="alert"></div>
+      <div style="margin-top:1.2em; color:#888; font-size:0.98em;">By signing up, you agree to the <a href="/terms" target="_blank" style="color:#337ab7; text-decoration:underline; font-weight:500;">Basic TTS Terms of Service</a>.</div>
+      <div id="signup-confirmation" style="display:none; text-align:center; margin-top:2em;">
+        <div style="font-size:2.5em; color:#4a90e2; margin-bottom:0.5em;" aria-hidden="true">&#9993;</div>
+        <div>A verification email has been sent with a magic link.</div>
+      </div>
+    </div>
+  </div>
   <main style="max-width:700px; margin:2em auto; background:#fff; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.04); padding:2em 1.5em 2em 1.5em;">
     <h1 style="margin-bottom:1.2em;">Privacy Policy</h1>
     <p><strong>Effective Date:</strong> July 20th, 2025</p>
