@@ -527,13 +527,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // On page load, show library if at /library
-    document.addEventListener('DOMContentLoaded', function() {
-        if (window.location.pathname === '/library') {
-            showLibraryPage(false);
-        }
-    });
-
     // 4. Logo click navigates to home
     const logoLink = document.getElementById('logo-link');
     if (logoLink) {
@@ -569,5 +562,9 @@ document.addEventListener('DOMContentLoaded', function() {
         updateAuthUI(user);
       });
       await checkMagicLink();
+      // After everything is ready, show library if at /library
+      if (window.location.pathname === '/library') {
+          showLibraryPage(false);
+      }
     })();
 }); 
