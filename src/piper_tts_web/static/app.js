@@ -170,27 +170,31 @@ document.addEventListener('DOMContentLoaded', function() {
       recordingsSection = document.getElementById('recordings-section');
       recordingsList = document.getElementById('recordings-list');
 
-      // Show modal
-      signupLink.onclick = (e) => { e.preventDefault(); showSignupModal(); };
-      loginLink.onclick = (e) => { e.preventDefault(); showSignupModal(true); };
-      closeSignupModal.onclick = () => { signupModal.style.display = 'none'; resetSignupModal(); };
+      // Always attach event handlers for signup/login
+      if (signupLink) signupLink.onclick = (e) => { e.preventDefault(); showSignupModal(); };
+      if (loginLink) loginLink.onclick = (e) => { e.preventDefault(); showSignupModal(true); };
+      if (closeSignupModal) closeSignupModal.onclick = () => { signupModal.style.display = 'none'; resetSignupModal(); };
       window.onclick = (e) => { if (e.target === signupModal) { signupModal.style.display = 'none'; resetSignupModal(); } };
-      signupCTA.onclick = handleSignup;
+      if (signupCTA) signupCTA.onclick = handleSignup;
 
       // Accessibility: allow Enter key to trigger sign up
-      signupEmail.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          signupCTA.click();
-        }
-      });
+      if (signupEmail) {
+        signupEmail.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            signupCTA.click();
+          }
+        });
+      }
 
       // Accessibility: focus management
-      signupModal.addEventListener('transitionend', function() {
-        if (signupModal.style.display === 'flex') {
-          signupEmail.focus();
-        }
-      });
+      if (signupModal) {
+        signupModal.addEventListener('transitionend', function() {
+          if (signupModal.style.display === 'flex') {
+            signupEmail.focus();
+          }
+        });
+      }
     }
 
     function showSignupModal(isLogin) {
@@ -273,8 +277,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateAuthUI(user) {
       if (user) {
-        authLinks.style.display = 'none';
-        userInfo.style.display = 'inline';
+        // Hide auth links, show Account
+        if (authLinks) authLinks.style.display = 'none';
+        if (userInfo) {
+          userInfo.style.display = 'inline';
+          // Insert Account link if not present
+          if (!document.getElementById('account-link')) {
+            userInfo.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
+          }
+          accountLink = document.getElementById('account-link');
+          if (accountLink) {
+            accountLink.onclick = (e) => { e.preventDefault(); showAccountDropdown(); };
+          }
+        }
         setupAccountUI();
         // Hide library page if visible
         var libraryPage = document.getElementById('library-page');
@@ -282,8 +297,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Hide homepage recordings section if present
         if (recordingsSection) recordingsSection.style.display = 'none';
       } else {
-        userInfo.style.display = 'none';
-        authLinks.style.display = 'inline';
+        // Show auth links, hide Account
+        if (userInfo) userInfo.style.display = 'none';
+        if (authLinks) authLinks.style.display = 'inline';
         // Hide library page if visible
         var libraryPage = document.getElementById('library-page');
         if (libraryPage) libraryPage.style.display = 'none';
@@ -643,7 +659,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 5. Nav/header is consistent (handled in index.html)
 
     // 6. Remove homepage recordings section if present (declare only once)
-    const recordingsSection = document.getElementById('recordings-section');
     if (recordingsSection) {
         recordingsSection.style.display = 'none';
     }
