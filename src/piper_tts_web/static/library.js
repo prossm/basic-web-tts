@@ -81,13 +81,22 @@ function createKebabMenu(rec, audioUrl, onDelete) {
     menu.style.top = (window.scrollY + rect.bottom + 4) + 'px';
     menu.style.left = (window.scrollX + rect.left - 60) + 'px';
     // Download
-    menu.querySelector('#download-audio').onclick = () => {
-        const a = document.createElement('a');
-        a.href = audioUrl;
-        a.download = rec.id + '.wav';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+    menu.querySelector('#download-audio').onclick = async () => {
+        // Force download using fetch and blob
+        try {
+            const response = await fetch(audioUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = rec.id + '.wav';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            alert('Failed to download file.');
+        }
         menu.remove();
     };
     // Delete
