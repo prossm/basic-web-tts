@@ -18,9 +18,21 @@
   </style>
 </head>
 <body>
-  <nav>
-    <a href="/">Home</a>
-  </nav>
+    <header style="width:100%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.03); position:relative; z-index:10;">
+      <nav style="display:flex; align-items:center; justify-content:space-between; max-width:1200px; margin:0 auto; padding:0.7em 2em;" aria-label="Main navigation">
+        <a href="/" id="logo-link" style="display:flex; align-items:center; text-decoration:none;">
+          <img src="/static/black-transparent-basictts-logo.png" alt="Basic TTS logo" style="height:38px; width:auto; margin-right:0.7em;">
+        </a>
+        <div style="display:flex; align-items:center; gap:2em;">
+          <a href="/about" id="about-link" style="text-decoration:none; font-weight:500; font-size:1.1em; color:#222;">About</a>
+          <span id="auth-links" style="display:none;">
+            <a href="#" id="signup-link" style="font-weight: bold;">Sign Up</a> |
+            <a href="#" id="login-link">Log In</a>
+          </span>
+          <span id="user-info" style="display:none;"></span>
+        </div>
+      </nav>
+    </header>
   <h1>About Basic TTS</h1>
   <p><strong>Basic TTS</strong> is a simple, user-friendly web application that lets you convert text into natural-sounding speech using a variety of high-quality voice models. Designed for ease of use and flexibility, it provides a modern interface for experimenting with text-to-speech (TTS) technology powered by <a href="https://github.com/OHF-Voice/piper1-gpl" target="_blank" rel="noopener">Piper.</a></p>
   <p style="margin-top:2em; color:#666; font-size:1em;">Basic TTS was created by Patrick Metzger.</p>
@@ -49,5 +61,6 @@
 
   <hr style="margin: 2em 0;">
   <p>For more details and to view the open source code, see the <a href="https://github.com/prossm/basic-web-tts" target="_blank" rel="noopener">GitHub repository</a>.</p>
+  <script src="/static/app.js"></script>
 </body>
 </html> 
