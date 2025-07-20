@@ -305,63 +305,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    async function loadUserRecordings() {
-      recordingsList.innerHTML = '<li>Loading...</li>';
-      firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
-      const res = await fetch('/recordings', {
-        headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
-      });
-      if (!res.ok) {
-        recordingsList.innerHTML = '<li>Failed to load recordings.</li>';
-        return;
-      }
-      const recordings = await res.json();
-      if (!recordings.length) {
-        recordingsList.innerHTML = '<li>No recordings yet.</li>';
-        return;
-      }
-      recordingsList.innerHTML = '';
-      recordings.forEach(rec => {
-        const li = document.createElement('li');
-        li.style.marginBottom = '1em';
-        li.style.padding = '0.5em';
-        li.style.border = '1px solid #ddd';
-        li.style.borderRadius = '4px';
-        
-        // Voice and text info
-        const infoDiv = document.createElement('div');
-        infoDiv.textContent = `${rec.voice || ''}: ${rec.text ? rec.text.slice(0, 40) + (rec.text.length > 40 ? '...' : '') : ''}`;
-        li.appendChild(infoDiv);
-        
-        // Audio player if we have a URL
-        if (rec.audioUrl) {
-          const audio = document.createElement('audio');
-          audio.controls = true;
-          audio.style.width = '100%';
-          audio.style.marginTop = '0.5em';
-          audio.src = rec.audioUrl;
-          li.appendChild(audio);
-        }
-        
-        // Delete button
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.className = 'btn btn-secondary';
-        delBtn.style.marginTop = '0.5em';
-        delBtn.onclick = async () => {
-          if (confirm('Delete this recording?')) {
-            await fetch(`/recordings/${rec.id}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
-            });
-            loadUserRecordings();
-          }
-        };
-        li.appendChild(delBtn);
-        recordingsList.appendChild(li);
-      });
-    }
-
     // Add Account/Settings UI logic
     let accountModal, accountLink, accountOptions, logoutButton;
 
