@@ -58,6 +58,88 @@ function truncateText(txt, n) {
   return txt.length > n ? txt.slice(0, n) + '…' : txt;
 }
 
+function createKebabMenu(rec, audioUrl, onDelete) {
+    // Remove any existing kebab menu
+    const existing = document.getElementById('kebab-menu');
+    if (existing) existing.remove();
+    const menu = document.createElement('div');
+    menu.id = 'kebab-menu';
+    menu.style.position = 'absolute';
+    menu.style.background = '#fff';
+    menu.style.boxShadow = '0 4px 24px rgba(0,0,0,0.13)';
+    menu.style.borderRadius = '8px';
+    menu.style.padding = '0.5em 0';
+    menu.style.zIndex = '2000';
+    menu.style.minWidth = '140px';
+    menu.innerHTML = `
+      <button id="download-audio" style="display:block; width:100%; padding:0.7em 1.2em; background:none; border:none; text-align:left; cursor:pointer; font-size:1em;">Download</button>
+      <button id="delete-audio" style="display:block; width:100%; padding:0.7em 1.2em; background:none; border:none; text-align:left; color:#dc3545; cursor:pointer; font-size:1em;">Delete</button>
+    `;
+    document.body.appendChild(menu);
+    // Position menu below the kebab button
+    const rect = rec.kebabBtn.getBoundingClientRect();
+    menu.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+    menu.style.left = (window.scrollX + rect.left - 60) + 'px';
+    // Download
+    menu.querySelector('#download-audio').onclick = () => {
+        const a = document.createElement('a');
+        a.href = audioUrl;
+        a.download = rec.id + '.wav';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        menu.remove();
+    };
+    // Delete
+    menu.querySelector('#delete-audio').onclick = () => {
+        menu.remove();
+        showDeleteModal(rec, onDelete);
+    };
+    // Close menu on outside click
+    function closeMenu(e) {
+        if (!menu.contains(e.target) && e.target !== rec.kebabBtn) {
+            menu.remove();
+            document.removeEventListener('mousedown', closeMenu);
+        }
+    }
+    setTimeout(() => {
+        document.addEventListener('mousedown', closeMenu);
+    }, 0);
+}
+function showDeleteModal(rec, onDelete) {
+    // Remove any existing modal
+    const existing = document.getElementById('delete-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'delete-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.4)';
+    modal.style.zIndex = '3000';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.innerHTML = `
+      <div style="background:#fff; padding:2em; border-radius:10px; max-width:350px; width:100%; box-shadow:0 2px 16px rgba(0,0,0,0.12); text-align:center;">
+        <h3 style="margin-bottom:1em;">Delete this recording?</h3>
+        <p style="color:#666; margin-bottom:2em;">This action cannot be undone.</p>
+        <button id="confirm-delete" style="background:#dc3545; color:#fff; border:none; border-radius:6px; padding:0.7em 1.5em; font-size:1em; margin-right:1em; cursor:pointer;">Yes, Delete</button>
+        <button id="cancel-delete" style="background:none; color:#337ab7; border:2px solid #337ab7; border-radius:6px; padding:0.7em 1.5em; font-size:1em; cursor:pointer;">Cancel</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#confirm-delete').onclick = async () => {
+        modal.remove();
+        await onDelete(rec);
+    };
+    modal.querySelector('#cancel-delete').onclick = () => {
+        modal.remove();
+    };
+}
+
 async function loadLibraryList() {
   libraryList.innerHTML = '<li>Loading...</li>';
   try {
@@ -108,6 +190,19 @@ async function loadLibraryList() {
       kebabBtn.style.background = 'none';
       kebabBtn.style.border = 'none';
       kebabBtn.style.cursor = 'pointer';
+      kebabBtn.onclick = (e) => {
+        e.preventDefault();
+        rec.kebabBtn = kebabBtn;
+        createKebabMenu(rec, rec.audioUrl, async (recToDelete) => {
+          // Call backend to delete
+          const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+          await fetch(`/recordings/${recToDelete.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+          });
+          loadLibraryList();
+        });
+      };
       iconsDiv.appendChild(playBtn);
       iconsDiv.appendChild(kebabBtn);
       li.appendChild(iconsDiv);
