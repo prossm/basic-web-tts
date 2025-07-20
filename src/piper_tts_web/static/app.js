@@ -634,4 +634,9 @@ document.addEventListener('DOMContentLoaded', function() {
       await checkMagicLink();
       attachAccountDropdownHandler(); // Call this after auth state is set
     })();
+
+    var aboutLink = document.getElementById('about-link');
+    if (aboutLink) {
+      aboutLink.href = '/about';
+    }
 }); 
