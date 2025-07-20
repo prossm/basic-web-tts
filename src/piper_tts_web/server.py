@@ -215,6 +215,13 @@ async def get_library():
         raise HTTPException(status_code=404, detail="Library page not found")
     return FileResponse(library_path)
 
+@app.get("/terms", response_class=HTMLResponse)
+async def get_terms():
+    terms_path = PACKAGE_DIR / "static" / "terms.html"
+    if not terms_path.exists():
+        raise HTTPException(status_code=404, detail="Terms page not found")
+    return FileResponse(terms_path)
+
 
 @app.get("/voices")
 async def list_voices():
