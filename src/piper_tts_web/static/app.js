@@ -341,6 +341,13 @@ document.addEventListener('DOMContentLoaded', function() {
         accountModal = dropdown;
         accountOptions = dropdown.querySelector('#account-options');
         logoutButton = dropdown.querySelector('#logout-button');
+        // Attach My Library link handler here
+        const myLibraryLink = dropdown.querySelector('#my-library-link');
+        myLibraryLink.onclick = (e) => {
+            e.preventDefault();
+            accountModal.style.display = 'none';
+            showLibraryPage();
+        };
         // Close dropdown logic
         function closeDropdown(e) {
             if (!dropdown.contains(e.target) && e.target !== accountLinkEl) {
@@ -476,13 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
             recordingsSection.style.display = 'none';
             window.location.href = '/';
         };
-        // My Library link logic
-        const myLibraryLink = accountModal.querySelector('#my-library-link');
-        myLibraryLink.onclick = (e) => {
-            e.preventDefault();
-            accountModal.style.display = 'none';
-            showLibraryPage();
-        };
+        // Remove My Library link handler from here
     }
 
     // 3. Make My Library a page (not a modal)
