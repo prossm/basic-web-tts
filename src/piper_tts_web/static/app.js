@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dropdown.style.padding = '1.2em 0 0.5em 0';
         dropdown.innerHTML = `
           <ul id="account-options" style="list-style:none; padding:0 0 0.5em 0; margin:0;">
-            <li><a href="#" id="my-library-link" class="account-link" style="display:block; padding:0.7em 1.5em;">My Library</a></li>
+            <li><a href="/library" id="my-library-link" class="account-link" style="display:block; padding:0.7em 1.5em;">My Library</a></li>
             <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 1.5em;">Terms of Service</a></li>
             <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 1.5em;">Privacy Policy</a></li>
           </ul>

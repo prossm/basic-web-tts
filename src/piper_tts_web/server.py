@@ -208,6 +208,13 @@ async def get_terms():
         raise HTTPException(status_code=404, detail="Terms page not found")
     return FileResponse(terms_path)
 
+@app.get("/privacy", response_class=HTMLResponse)
+async def get_privacy():
+    privacy_path = PACKAGE_DIR / "static" / "privacy.html"
+    if not privacy_path.exists():
+        raise HTTPException(status_code=404, detail="Privacy page not found")
+    return FileResponse(privacy_path)
+
 
 @app.get("/voices")
 async def list_voices():
