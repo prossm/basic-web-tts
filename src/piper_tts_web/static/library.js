@@ -140,6 +140,45 @@ function showDeleteModal(rec, onDelete) {
     };
 }
 
+function showPlayModal(audioUrl) {
+    // Remove any existing play modal
+    const existing = document.getElementById('play-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'play-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.4)';
+    modal.style.zIndex = '3000';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.innerHTML = `
+      <div style="background:#fff; padding:2em; border-radius:10px; max-width:400px; width:100%; box-shadow:0 2px 16px rgba(0,0,0,0.12); text-align:center; position:relative;">
+        <button id="close-play-modal" aria-label="Close" style="position:absolute; top:10px; right:16px; font-size:1.5em; background:none; border:none; color:#888; cursor:pointer;">&times;</button>
+        <h3 style="margin-bottom:1em;">Play Recording</h3>
+        <audio controls style="width:100%; margin-bottom:1em;" src="${audioUrl}"></audio>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#close-play-modal').onclick = () => {
+        modal.remove();
+    };
+    // Close modal on outside click
+    function closeModal(e) {
+        if (e.target === modal) {
+            modal.remove();
+            document.removeEventListener('mousedown', closeModal);
+        }
+    }
+    setTimeout(() => {
+        document.addEventListener('mousedown', closeModal);
+    }, 0);
+}
+
 async function loadLibraryList() {
   libraryList.innerHTML = '<li>Loading...</li>';
   try {
@@ -186,6 +225,10 @@ async function loadLibraryList() {
       playBtn.style.border = 'none';
       playBtn.style.cursor = 'pointer';
       playBtn.style.marginRight = '0.7em';
+      playBtn.onclick = (e) => {
+        e.preventDefault();
+        showPlayModal(rec.audioUrl);
+      };
       // Kebab icon (SVG)
       const kebabBtn = document.createElement('button');
       kebabBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
