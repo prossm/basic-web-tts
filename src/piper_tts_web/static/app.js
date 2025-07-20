@@ -281,16 +281,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (authLinks) authLinks.style.display = 'none';
         if (userInfo) {
           userInfo.style.display = 'inline';
-          // Insert Account link if not present
-          if (!document.getElementById('account-link')) {
-            userInfo.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
-          }
+          userInfo.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
           accountLink = document.getElementById('account-link');
           if (accountLink) {
             accountLink.onclick = (e) => { e.preventDefault(); showAccountDropdown(); };
           }
         }
-        setupAccountUI();
+        setupAccountUI(); // Only for dropdown/modal logic
         // Hide library page if visible
         var libraryPage = document.getElementById('library-page');
         if (libraryPage) libraryPage.style.display = 'none';
@@ -525,19 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Hook up My Library link in Account modal
     function setupAccountUI() {
-        // Replace auth links with Account link after login
-        if (!document.getElementById('account-link')) {
-            const nav = document.querySelector('nav');
-            let accountSpan = document.getElementById('user-info');
-            if (!accountSpan) {
-                accountSpan = document.createElement('span');
-                accountSpan.id = 'user-info';
-                nav.appendChild(accountSpan);
-            }
-            accountSpan.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
-            accountLink = document.getElementById('account-link');
-            accountLink.onclick = (e) => { e.preventDefault(); showAccountDropdown(); };
-        }
+        // Only handle dropdown/modal logic, not header link injection
         createAccountDropdown();
         // Log Out button logic
         logoutButton.onclick = async () => {
