@@ -88,13 +88,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Send text to server for processing
-            const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+            let headers = { 'Content-Type': 'application/json' };
+            let firebaseIdToken = null;
+            if (firebaseAuth && firebaseAuth.currentUser) {
+                firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+                headers['Authorization'] = 'Bearer ' + firebaseIdToken;
+            }
             const response = await fetch('/synthesize', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + firebaseIdToken 
-                },
+                headers: headers,
                 body: JSON.stringify({
                     text: text,
                     voice: voice
