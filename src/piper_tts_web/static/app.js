@@ -560,11 +560,11 @@ document.addEventListener('DOMContentLoaded', function() {
       firebaseAuth.onAuthStateChanged(user => {
         firebaseUser = user;
         updateAuthUI(user);
+        // After everything is ready, show library if at /library
+        if (window.location.pathname === '/library') {
+            showLibraryPage(false);
+        }
       });
       await checkMagicLink();
-      // After everything is ready, show library if at /library
-      if (window.location.pathname === '/library') {
-          showLibraryPage(false);
-      }
     })();
 }); 
