@@ -92,14 +92,15 @@
   </main>
   <script src="/static/app.js"></script>
   <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  (async function() {
+    await loadFirebase();
     setupAuthUI();
     firebaseAuth.onAuthStateChanged(user => {
       firebaseUser = user;
       updateAuthUI(user);
     });
-    checkMagicLink();
-  });
+    await checkMagicLink();
+  })();
   </script>
 </body>
 </html> 
