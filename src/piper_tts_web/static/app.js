@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
         myLibraryLink.onclick = (e) => {
             e.preventDefault();
             accountModal.style.display = 'none';
-            showLibraryPage();
+            showLibraryPage(true);
         };
         // Close dropdown logic
         function closeDropdown(e) {
@@ -487,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 3. Make My Library a page (not a modal)
-    function showLibraryPage() {
+    function showLibraryPage(pushState = true) {
         // Hide main container, show library view
         document.querySelector('.container').style.display = 'none';
         let libraryPage = document.getElementById('library-page');
@@ -509,68 +509,30 @@ document.addEventListener('DOMContentLoaded', function() {
             libraryPage.style.display = 'block';
         }
         loadLibraryList();
-    }
-
-    async function loadLibraryList() {
-        const list = document.getElementById('library-list');
-        list.innerHTML = '<li>Loading...</li>';
-        try {
-            const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
-            const res = await fetch('/recordings', {
-                headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
-            });
-            if (!res.ok) {
-                list.innerHTML = '<li>Failed to load recordings.</li>';
-                return;
-            }
-            const recordings = await res.json();
-            if (!recordings.length) {
-                list.innerHTML = '<li>No recordings yet.</li>';
-                return;
-            }
-            list.innerHTML = '';
-            recordings.forEach(rec => {
-                const li = document.createElement('li');
-                li.style.display = 'flex';
-                li.style.alignItems = 'center';
-                li.style.justifyContent = 'space-between';
-                li.style.padding = '0.7em 0';
-                li.style.borderBottom = '1px solid #eee';
-                // Info
-                const infoDiv = document.createElement('div');
-                infoDiv.style.flex = '1';
-                infoDiv.innerHTML = `
-                  <div style="font-size:0.98em; color:#333;">${formatDateTime(rec.created)}</div>
-                  <div style="font-size:0.97em; color:#666;">${rec.voice || ''}</div>
-                  <div style="font-size:1.05em; color:#222; margin-top:0.2em;">${truncateText(rec.text, 20)}</div>
-                `;
-                li.appendChild(infoDiv);
-                // Icons
-                const iconsDiv = document.createElement('div');
-                iconsDiv.style.display = 'flex';
-                iconsDiv.style.alignItems = 'center';
-                // Play icon (SVG)
-                const playBtn = document.createElement('button');
-                playBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
-                playBtn.style.background = 'none';
-                playBtn.style.border = 'none';
-                playBtn.style.cursor = 'pointer';
-                playBtn.style.marginRight = '0.7em';
-                // Kebab icon (SVG)
-                const kebabBtn = document.createElement('button');
-                kebabBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
-                kebabBtn.style.background = 'none';
-                kebabBtn.style.border = 'none';
-                kebabBtn.style.cursor = 'pointer';
-                iconsDiv.appendChild(playBtn);
-                iconsDiv.appendChild(kebabBtn);
-                li.appendChild(iconsDiv);
-                list.appendChild(li);
-            });
-        } catch (err) {
-            list.innerHTML = '<li>Failed to load recordings.</li>';
+        if (pushState) {
+            window.history.pushState({ page: 'library' }, '', '/library');
         }
     }
+
+    // Handle browser navigation (back/forward)
+    window.addEventListener('popstate', function(event) {
+        const path = window.location.pathname;
+        if (path === '/library') {
+            showLibraryPage(false);
+        } else {
+            // Show home/main container, hide library
+            document.querySelector('.container').style.display = 'block';
+            const libraryPage = document.getElementById('library-page');
+            if (libraryPage) libraryPage.style.display = 'none';
+        }
+    });
+
+    // On page load, show library if at /library
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.location.pathname === '/library') {
+            showLibraryPage(false);
+        }
+    });
 
     // 4. Logo click navigates to home
     const logoLink = document.getElementById('logo-link');
