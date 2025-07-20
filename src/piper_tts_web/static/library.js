@@ -9,6 +9,10 @@ let firebaseApp = null;
 let firebaseAuth = null;
 let firebaseUser = null;
 
+let accountDropdownOpen = false;
+let accountDropdown = null;
+let accountDropdownCloseHandler = null;
+
 async function loadFirebase() {
   if (!window.firebase) {
     await new Promise((resolve, reject) => {
@@ -116,10 +120,15 @@ async function loadLibraryList() {
 
 // Dropdown logic for Account (copied from app.js for now)
 function createOrToggleAccountDropdown() {
-    let dropdown = document.getElementById('account-modal');
     const accountLinkEl = document.getElementById('account-link');
-    if (dropdown && dropdown.style.display === 'block') {
+    let dropdown = document.getElementById('account-modal');
+    if (dropdown && accountDropdownOpen) {
         dropdown.style.display = 'none';
+        accountDropdownOpen = false;
+        if (accountDropdownCloseHandler) {
+            document.removeEventListener('mousedown', accountDropdownCloseHandler);
+            accountDropdownCloseHandler = null;
+        }
         return;
     }
     if (dropdown) dropdown.remove();
@@ -147,20 +156,29 @@ function createOrToggleAccountDropdown() {
       <button id="logout-button" class="btn btn-secondary" style="margin:0.5em 1.5em 0.5em 1.5em; width:calc(100% - 3em);">Log Out</button>
     `;
     document.body.appendChild(dropdown);
+    accountDropdownOpen = true;
+    accountDropdown = dropdown;
     // Close dropdown if click outside or on Account again
-    function closeDropdown(e) {
+    accountDropdownCloseHandler = function(e) {
         if (!dropdown.contains(e.target) && e.target !== accountLinkEl) {
             dropdown.style.display = 'none';
-            document.removeEventListener('mousedown', closeDropdown);
+            accountDropdownOpen = false;
+            document.removeEventListener('mousedown', accountDropdownCloseHandler);
+            accountDropdownCloseHandler = null;
         }
-    }
+    };
     setTimeout(() => {
-        document.addEventListener('mousedown', closeDropdown);
+        document.addEventListener('mousedown', accountDropdownCloseHandler);
     }, 0);
     // Close dropdown on link click
     dropdown.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
             dropdown.style.display = 'none';
+            accountDropdownOpen = false;
+            if (accountDropdownCloseHandler) {
+                document.removeEventListener('mousedown', accountDropdownCloseHandler);
+                accountDropdownCloseHandler = null;
+            }
         });
     });
     // Log Out button logic
@@ -171,6 +189,11 @@ function createOrToggleAccountDropdown() {
                 await firebaseAuth.signOut();
             }
             dropdown.style.display = 'none';
+            accountDropdownOpen = false;
+            if (accountDropdownCloseHandler) {
+                document.removeEventListener('mousedown', accountDropdownCloseHandler);
+                accountDropdownCloseHandler = null;
+            }
             userInfo.style.display = 'none';
             authLinks.style.display = 'inline';
             window.location.href = '/';
@@ -186,6 +209,18 @@ function attachAccountDropdownHandler() {
         };
     }
 }
+// Close dropdown on popstate (back/forward navigation)
+window.addEventListener('popstate', function() {
+    const dropdown = document.getElementById('account-modal');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        accountDropdownOpen = false;
+        if (accountDropdownCloseHandler) {
+            document.removeEventListener('mousedown', accountDropdownCloseHandler);
+            accountDropdownCloseHandler = null;
+        }
+    }
+});
 
 (async function() {
   await loadFirebase();
