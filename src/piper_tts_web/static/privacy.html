@@ -91,16 +91,5 @@
     <p><strong>By using Basic TTS, you acknowledge that you have read, understood, and agree to this Privacy Policy. For more information, see our <a href="/terms">Terms of Service</a>.</strong></p>
   </main>
   <script src="/static/app.js"></script>
-  <script>
-  (async function() {
-    await loadFirebase();
-    setupAuthUI();
-    firebaseAuth.onAuthStateChanged(user => {
-      firebaseUser = user;
-      updateAuthUI(user);
-    });
-    await checkMagicLink();
-  })();
-  </script>
 </body>
 </html> 

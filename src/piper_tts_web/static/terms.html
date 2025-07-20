@@ -99,16 +99,5 @@
     <p><strong>By using Basic TTS, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</strong></p>
   </main>
   <script src="/static/app.js"></script>
-  <script>
-  (async function() {
-    await loadFirebase();
-    setupAuthUI();
-    firebaseAuth.onAuthStateChanged(user => {
-      firebaseUser = user;
-      updateAuthUI(user);
-    });
-    await checkMagicLink();
-  })();
-  </script>
 </body>
 </html> 
