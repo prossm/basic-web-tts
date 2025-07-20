@@ -7,6 +7,23 @@
   <link rel="stylesheet" href="/static/styles.css">
   <link rel="icon" href="/static/black-transparent-basictts-favicon.png" media="(prefers-color-scheme: light)">
   <link rel="icon" href="/static/white-transparent-basictts-favicon.png" media="(prefers-color-scheme: dark)">
+  <style>
+    ul.about-main, ol.about-main {
+      margin-left: 2em;
+      margin-bottom: 1.2em;
+    }
+    ul.about-sub, ol.about-sub {
+      margin-left: 4em;
+      margin-bottom: 0.7em;
+    }
+    .container h2 {
+      margin-top: 2.2em;
+      margin-bottom: 1em;
+    }
+    .container p {
+      margin-bottom: 1.2em;
+    }
+  </style>
 </head>
 <body>
     <header style="width:100%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.03); position:relative; z-index:10;">
@@ -29,7 +46,7 @@
       <p><strong>Basic TTS</strong> is a simple, user-friendly web application that lets you convert text into natural-sounding speech using a variety of high-quality voice models. Designed for ease of use and flexibility, it provides a modern interface for experimenting with text-to-speech (TTS) technology powered by <a href="https://github.com/OHF-Voice/piper1-gpl" target="_blank" rel="noopener">Piper.</a></p>
       <p style="margin-top:2em; color:#666; font-size:1em;">Basic TTS was created by Patrick Metzger.</p>
       <h2>Key Features</h2>
-      <ul>
+      <ul class="about-main">
         <li><strong>Multiple Voices:</strong> Choose from a range of English voices, each with its own unique accent and style.</li>
         <li><strong>Instant Conversion:</strong> Enter your text, select a voice, and generate speech audio in seconds.</li>
         <li><strong>Audio Controls:</strong> Play, pause, adjust playback speed, or download the generated audio for offline use.</li>
@@ -38,7 +55,7 @@
       </ul>
 
       <h2>How It Works</h2>
-      <ol>
+      <ol class="about-main">
         <li><strong>Select a Voice:</strong> Pick from the available voices in the dropdown menu.</li>
         <li><strong>Enter Text:</strong> Type or paste the text you want to convert.</li>
         <li><strong>Convert:</strong> Click "Convert to Speech" and wait for the audio to be generated.</li>
@@ -46,7 +63,7 @@
       </ol>
 
       <h2>Technology</h2>
-      <ul>
+      <ul class="about-main">
         <li><strong>Backend:</strong> Python, using <a href="https://github.com/OHF-Voice/piper1-gpl" target="_blank" rel="noopener">Piper</a> for TTS synthesis.</li>
         <li><strong>Frontend:</strong> Modern JavaScript, HTML, and CSS for a responsive web interface.</li>
       </ul>
