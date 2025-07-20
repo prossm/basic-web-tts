@@ -151,7 +151,9 @@ async function loadLibraryList() {
       libraryList.innerHTML = '<li>Failed to load recordings.</li>';
       return;
     }
-    const recordings = await res.json();
+    let recordings = await res.json();
+    // Filter out deleted recordings
+    recordings = recordings.filter(r => !r.deleted);
     if (!recordings.length) {
       libraryList.innerHTML = '<li>No recordings yet.</li>';
       return;
@@ -194,13 +196,14 @@ async function loadLibraryList() {
         e.preventDefault();
         rec.kebabBtn = kebabBtn;
         createKebabMenu(rec, rec.audioUrl, async (recToDelete) => {
-          // Call backend to delete
+          // Call backend to mark as deleted
           const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
           await fetch(`/recordings/${recToDelete.id}`, {
             method: 'DELETE',
             headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
           });
-          loadLibraryList();
+          // Remove from UI
+          li.remove();
         });
       };
       iconsDiv.appendChild(playBtn);

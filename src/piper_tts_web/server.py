@@ -144,24 +144,10 @@ async def list_recordings(uid: str = Depends(get_user_uid)):
 async def delete_recording(recording_id: str, uid: str = Depends(get_user_uid)):
     if not db or not uid:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    # Get the recording to find the Firebase Storage file path
     ref = db.collection("users").document(uid).collection("recordings").document(recording_id)
-    recording = ref.get()
-    if recording.exists:
-        recording_data = recording.to_dict()
-        # Delete from Firebase Storage if we have the file path
-        if bucket and recording_data.get("storagePath"):
-            try:
-                blob = bucket.blob(recording_data["storagePath"])
-                blob.delete()
-                logger.info(f"Deleted file from Firebase Storage: {recording_data['storagePath']}")
-            except Exception as e:
-                logger.error(f"Failed to delete file from Firebase Storage: {e}")
-    
-    # Delete from Firestore
-    ref.delete()
-    return {"status": "deleted"}
+    # Mark as deleted instead of deleting
+    ref.set({"deleted": True}, merge=True)
+    return {"status": "marked_deleted"}
 
 
 class SynthesisRequest(BaseModel):
