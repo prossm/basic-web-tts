@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service - Basic TTS</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="/static/black-transparent-basictts-favicon.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="/static/white-transparent-basictts-favicon.png" media="(prefers-color-scheme: dark)">
+</head>
+<body>
+  <header style="width:100%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.03); position:relative; z-index:10;">
+    <nav style="display:flex; align-items:center; justify-content:space-between; max-width:1200px; margin:0 auto; padding:0.7em 2em;" aria-label="Main navigation">
+      <a href="/" id="logo-link" style="display:flex; align-items:center; text-decoration:none;">
+        <img src="/static/black-transparent-basictts-logo.png" alt="Basic TTS logo" style="height:38px; width:auto; margin-right:0.7em;">
+      </a>
+      <div style="display:flex; align-items:center; gap:2em;">
+        <a href="/about" id="about-link" style="text-decoration:none; font-weight:500; font-size:1.1em; color:#222;">About</a>
+        <span id="auth-links" style="display:none;">
+          <a href="#" id="signup-link" style="font-weight: bold;">Sign Up</a> |
+          <a href="#" id="login-link">Log In</a>
+        </span>
+        <span id="user-info" style="display:none;"></span>
+      </div>
+    </nav>
+  </header>
+  <main style="max-width:700px; margin:2em auto; background:#fff; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.04); padding:2em 1.5em 2em 1.5em;">
+    <h1 style="margin-bottom:1.2em;">Terms of Service</h1>
+    <p><strong>Effective Date:</strong> [Insert Date]</p>
+    <p>Welcome to Basic TTS! By using our website and services, you agree to the following Terms of Service (“Terms”). Please read them carefully.</p>
+    <hr style="margin:2em 0;">
+    <h2>1. Acceptance of Terms</h2>
+    <p>By accessing or using Basic TTS (“Service”, “we”, “us”, or “our”), you agree to be bound by these Terms and our Privacy Policy. If you do not agree to these Terms, please do not use our Service.</p>
+    <h2>2. Eligibility</h2>
+    <p>You must be at least 13 years old to use Basic TTS. By using the Service, you represent and warrant that you meet this requirement.</p>
+    <h2>3. Use of the Service</h2>
+    <ul>
+      <li>You may use Basic TTS to convert text to speech and manage your own audio files.</li>
+      <li>You agree not to use the Service for any unlawful, harmful, or abusive purposes, including but not limited to:
+        <ul>
+          <li>Violating any applicable laws or regulations.</li>
+          <li>Infringing on the rights of others.</li>
+          <li>Engaging in deceptive impersonation, scams, or fraudulent activity.</li>
+        </ul>
+      </li>
+    </ul>
+    <h2>4. User Accounts</h2>
+    <ul>
+      <li>You may be required to create an account to access certain features.</li>
+      <li>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</li>
+    </ul>
+    <h2>5. Data Privacy and Security</h2>
+    <ul>
+      <li><strong>No Sale or Sharing of Data:</strong> We will never sell your data or share it with third parties for marketing or advertising purposes.</li>
+      <li><strong>Internal Use Only:</strong> Your data (including text, audio files, and account information) may be accessed by Basic TTS staff solely for research, analytics, and quality assurance purposes.</li>
+      <li><strong>Data Security:</strong> We use industry-standard security measures to protect your data. However, no method of transmission or storage is 100% secure, and we cannot guarantee absolute security.</li>
+    </ul>
+    <h2>6. Intellectual Property</h2>
+    <ul>
+      <li>All content and software provided by Basic TTS is owned by us or our licensors.</li>
+      <li>You retain ownership of any text or audio you create using the Service, but grant us a limited license to store, process, and use this content as necessary to provide the Service.</li>
+    </ul>
+    <h2>7. Service Availability</h2>
+    <ul>
+      <li>We strive to keep Basic TTS available at all times, but we do not guarantee uninterrupted or error-free service.</li>
+      <li>We may suspend, modify, or discontinue the Service at any time without notice.</li>
+    </ul>
+    <h2>8. Termination</h2>
+    <ul>
+      <li>You may stop using the Service at any time.</li>
+      <li>We reserve the right to suspend or terminate your access to the Service at our discretion, including for violation of these Terms.</li>
+    </ul>
+    <h2>9. Disclaimers</h2>
+    <ul>
+      <li>The Service is provided “as is” and “as available” without warranties of any kind, either express or implied.</li>
+      <li>We do not warrant that the Service will meet your requirements or be error-free.</li>
+    </ul>
+    <h2>10. Limitation of Liability</h2>
+    <p>To the fullest extent permitted by law, Basic TTS and its staff shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses, resulting from:</p>
+    <ul>
+      <li>Your use or inability to use the Service;</li>
+      <li>Any unauthorized access to or use of our servers and/or any personal information stored therein.</li>
+    </ul>
+    <h2>11. Changes to These Terms</h2>
+    <p>We may update these Terms from time to time. If we make material changes, we will notify you by posting the new Terms on our website. Your continued use of the Service after changes become effective constitutes your acceptance of the new Terms.</p>
+    <h2>12. Contact</h2>
+    <p>If you have any questions about these Terms, please contact us at <a href="mailto:hello@basictts.com">hello@basictts.com</a>.</p>
+    <hr style="margin:2em 0;">
+    <p><strong>By using Basic TTS, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</strong></p>
+  </main>
+  <script>
+// Account dropdown logic (copied from app.js)
+let accountDropdownOpen = false;
+let accountDropdown = null;
+let accountDropdownCloseHandler = null;
+function createOrToggleAccountDropdown() {
+    const accountLinkEl = document.getElementById('account-link');
+    let dropdown = document.getElementById('account-modal');
+    if (dropdown && accountDropdownOpen) {
+        dropdown.style.display = 'none';
+        accountDropdownOpen = false;
+        if (accountDropdownCloseHandler) {
+            document.removeEventListener('mousedown', accountDropdownCloseHandler);
+            accountDropdownCloseHandler = null;
+        }
+        return;
+    }
+    if (dropdown) dropdown.remove();
+    // Create dropdown
+    const rect = accountLinkEl.getBoundingClientRect();
+    dropdown = document.createElement('div');
+    dropdown.id = 'account-modal';
+    dropdown.className = 'modal';
+    dropdown.style.display = 'block';
+    dropdown.style.position = 'absolute';
+    dropdown.style.top = (window.scrollY + rect.bottom + 8) + 'px';
+    dropdown.style.left = (window.scrollX + rect.right - 240) + 'px';
+    dropdown.style.width = '240px';
+    dropdown.style.background = '#fff';
+    dropdown.style.borderRadius = '10px';
+    dropdown.style.boxShadow = '0 4px 24px rgba(0,0,0,0.13)';
+    dropdown.style.zIndex = '1000';
+    dropdown.style.padding = '1.2em 0 0.5em 0';
+    dropdown.innerHTML = `
+      <ul id="account-options" style="list-style:none; padding:0 0 0.5em 0; margin:0;">
+        <li><a href="/library" id="my-library-link" class="account-link" style="display:block; padding:0.7em 1.5em;">My Library</a></li>
+        <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 1.5em;">Terms of Service</a></li>
+        <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 1.5em;">Privacy Policy</a></li>
+      </ul>
+      <button id="logout-button" class="btn btn-secondary" style="margin:0.5em 1.5em 0.5em 1.5em; width:calc(100% - 3em);">Log Out</button>
+    `;
+    document.body.appendChild(dropdown);
+    accountDropdownOpen = true;
+    accountDropdown = dropdown;
+    // Close dropdown if click outside or on Account again
+    accountDropdownCloseHandler = function(e) {
+        if (!dropdown.contains(e.target) && e.target !== accountLinkEl) {
+            dropdown.style.display = 'none';
+            accountDropdownOpen = false;
+            document.removeEventListener('mousedown', accountDropdownCloseHandler);
+            accountDropdownCloseHandler = null;
+        }
+    };
+    setTimeout(() => {
+        document.addEventListener('mousedown', accountDropdownCloseHandler);
+    }, 0);
+    // Close dropdown on link click
+    dropdown.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+            accountDropdownOpen = false;
+            if (accountDropdownCloseHandler) {
+                document.removeEventListener('mousedown', accountDropdownCloseHandler);
+                accountDropdownCloseHandler = null;
+            }
+        });
+    });
+    // Log Out button logic
+    const logoutButton = dropdown.querySelector('#logout-button');
+    if (logoutButton) {
+        logoutButton.onclick = async () => {
+            if (window.firebase && window.firebase.auth) {
+                await firebaseAuth.signOut();
+            }
+            dropdown.style.display = 'none';
+            accountDropdownOpen = false;
+            if (accountDropdownCloseHandler) {
+                document.removeEventListener('mousedown', accountDropdownCloseHandler);
+                accountDropdownCloseHandler = null;
+            }
+            document.getElementById('user-info').style.display = 'none';
+            document.getElementById('auth-links').style.display = 'inline';
+            window.location.href = '/';
+        };
+    }
+}
+function attachAccountDropdownHandler() {
+    const accountLink = document.getElementById('account-link');
+    if (accountLink) {
+        accountLink.onclick = (e) => {
+            e.preventDefault();
+            createOrToggleAccountDropdown();
+        };
+    }
+}
+window.addEventListener('popstate', function() {
+    const dropdown = document.getElementById('account-modal');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        accountDropdownOpen = false;
+        if (accountDropdownCloseHandler) {
+            document.removeEventListener('mousedown', accountDropdownCloseHandler);
+            accountDropdownCloseHandler = null;
+        }
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+  const userInfo = document.getElementById('user-info');
+  if (userInfo && userInfo.querySelector('#account-link')) {
+    attachAccountDropdownHandler();
+  }
+});
+  </script>
+</body>
+</html> 
