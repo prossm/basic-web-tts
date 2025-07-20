@@ -611,10 +611,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Event listeners
-    convertButton.addEventListener('click', convertToSpeech);
-    
+    if (typeof convertButton !== 'undefined' && convertButton) {
+      convertButton.addEventListener('click', convertToSpeech);
+    }
     // Load voices when the page loads
-    loadVoices();
+    if (typeof loadVoices === 'function' && typeof voiceSelect !== 'undefined' && voiceSelect) {
+      loadVoices();
+    }
 
     // On DOMContentLoaded, initialize everything
     (async function() {
