@@ -92,46 +92,15 @@
   </main>
   <script src="/static/app.js"></script>
   <script>
-// On page load, update header links based on auth state
-(async function() {
-  if (!window.firebase) {
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
+  (async function() {
+    await loadFirebase();
+    setupAuthUI();
+    firebaseAuth.onAuthStateChanged(user => {
+      firebaseUser = user;
+      updateAuthUI(user);
     });
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  }
-  const res = await fetch('/firebase-config');
-  const config = await res.json();
-  if (!window._privacyFirebaseApp) {
-    window._privacyFirebaseApp = firebase.initializeApp(config, 'privacy');
-  }
-  const firebaseAuth = firebase.auth(window._privacyFirebaseApp);
-  const authLinks = document.getElementById('auth-links');
-  const userInfo = document.getElementById('user-info');
-  firebaseAuth.onAuthStateChanged(user => {
-    if (user) {
-      authLinks.style.display = 'none';
-      userInfo.style.display = 'inline';
-      userInfo.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
-      if (window.attachAccountDropdownHandler) {
-        attachAccountDropdownHandler();
-      }
-    } else {
-      userInfo.style.display = 'none';
-      authLinks.style.display = 'inline';
-    }
-  });
-})();
+    await checkMagicLink();
+  })();
   </script>
 </body>
 </html> 
