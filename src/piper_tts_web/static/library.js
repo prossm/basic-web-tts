@@ -37,13 +37,7 @@ function updateAuthUI(user) {
     authLinks.style.display = 'none';
     userInfo.style.display = 'inline';
     userInfo.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
-    const accountLink = document.getElementById('account-link');
-    if (accountLink) {
-      accountLink.onclick = (e) => {
-        e.preventDefault();
-        window.location.href = '/'; // Or show dropdown if desired
-      };
-    }
+    attachAccountDropdownHandler();
   } else {
     userInfo.style.display = 'none';
     authLinks.style.display = 'inline';
@@ -118,6 +112,79 @@ async function loadLibraryList() {
   } catch (err) {
     libraryList.innerHTML = '<li>Failed to load recordings.</li>';
   }
+}
+
+// Dropdown logic for Account (copied from app.js for now)
+function createOrToggleAccountDropdown() {
+    let dropdown = document.getElementById('account-modal');
+    const accountLinkEl = document.getElementById('account-link');
+    if (dropdown && dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+        return;
+    }
+    if (dropdown) dropdown.remove();
+    // Create dropdown
+    const rect = accountLinkEl.getBoundingClientRect();
+    dropdown = document.createElement('div');
+    dropdown.id = 'account-modal';
+    dropdown.className = 'modal';
+    dropdown.style.display = 'block';
+    dropdown.style.position = 'absolute';
+    dropdown.style.top = (window.scrollY + rect.bottom + 8) + 'px';
+    dropdown.style.left = (window.scrollX + rect.right - 240) + 'px';
+    dropdown.style.width = '240px';
+    dropdown.style.background = '#fff';
+    dropdown.style.borderRadius = '10px';
+    dropdown.style.boxShadow = '0 4px 24px rgba(0,0,0,0.13)';
+    dropdown.style.zIndex = '1000';
+    dropdown.style.padding = '1.2em 0 0.5em 0';
+    dropdown.innerHTML = `
+      <ul id="account-options" style="list-style:none; padding:0 0 0.5em 0; margin:0;">
+        <li><a href="/library" id="my-library-link" class="account-link" style="display:block; padding:0.7em 1.5em;">My Library</a></li>
+        <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 1.5em;">Terms of Service</a></li>
+        <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 1.5em;">Privacy Policy</a></li>
+      </ul>
+      <button id="logout-button" class="btn btn-secondary" style="margin:0.5em 1.5em 0.5em 1.5em; width:calc(100% - 3em);">Log Out</button>
+    `;
+    document.body.appendChild(dropdown);
+    // Close dropdown if click outside or on Account again
+    function closeDropdown(e) {
+        if (!dropdown.contains(e.target) && e.target !== accountLinkEl) {
+            dropdown.style.display = 'none';
+            document.removeEventListener('mousedown', closeDropdown);
+        }
+    }
+    setTimeout(() => {
+        document.addEventListener('mousedown', closeDropdown);
+    }, 0);
+    // Close dropdown on link click
+    dropdown.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+        });
+    });
+    // Log Out button logic
+    const logoutButton = dropdown.querySelector('#logout-button');
+    if (logoutButton) {
+        logoutButton.onclick = async () => {
+            if (window.firebase && window.firebase.auth) {
+                await firebaseAuth.signOut();
+            }
+            dropdown.style.display = 'none';
+            userInfo.style.display = 'none';
+            authLinks.style.display = 'inline';
+            window.location.href = '/';
+        };
+    }
+}
+function attachAccountDropdownHandler() {
+    const accountLink = document.getElementById('account-link');
+    if (accountLink) {
+        accountLink.onclick = (e) => {
+            e.preventDefault();
+            createOrToggleAccountDropdown();
+        };
+    }
 }
 
 (async function() {
