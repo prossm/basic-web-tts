@@ -343,11 +343,8 @@ document.addEventListener('DOMContentLoaded', function() {
         logoutButton = dropdown.querySelector('#logout-button');
         // Attach My Library link handler here
         const myLibraryLink = dropdown.querySelector('#my-library-link');
-        myLibraryLink.onclick = (e) => {
-            e.preventDefault();
-            accountModal.style.display = 'none';
-            showLibraryPage(true);
-        };
+        myLibraryLink.setAttribute('href', '/library');
+        myLibraryLink.onclick = null;
         // Close dropdown logic
         function closeDropdown(e) {
             if (!dropdown.contains(e.target) && e.target !== accountLinkEl) {
@@ -487,45 +484,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 3. Make My Library a page (not a modal)
-    function showLibraryPage(pushState = true) {
-        // Hide main container, show library view
-        document.querySelector('.container').style.display = 'none';
-        let libraryPage = document.getElementById('library-page');
-        if (!libraryPage) {
-            libraryPage = document.createElement('div');
-            libraryPage.id = 'library-page';
-            libraryPage.style.maxWidth = '700px';
-            libraryPage.style.margin = '2em auto';
-            libraryPage.style.background = '#fff';
-            libraryPage.style.borderRadius = '10px';
-            libraryPage.style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)';
-            libraryPage.style.padding = '2em 1.5em 2em 1.5em';
-            libraryPage.innerHTML = `
-              <h2 style="margin-bottom:1.5em;">My Library</h2>
-              <ul id="library-list" style="list-style:none; padding:0; margin:0;"></ul>
-            `;
-            document.body.appendChild(libraryPage);
-        } else {
-            libraryPage.style.display = 'block';
-        }
-        loadLibraryList();
-        if (pushState) {
-            window.history.pushState({ page: 'library' }, '', '/library');
-        }
-    }
-
-    // Handle browser navigation (back/forward)
-    window.addEventListener('popstate', function(event) {
-        const path = window.location.pathname;
-        if (path === '/library') {
-            showLibraryPage(false);
-        } else {
-            // Show home/main container, hide library
-            document.querySelector('.container').style.display = 'block';
-            const libraryPage = document.getElementById('library-page');
-            if (libraryPage) libraryPage.style.display = 'none';
-        }
-    });
+    // Remove showLibraryPage, loadLibraryList, and related popstate logic
 
     // 4. Logo click navigates to home
     const logoLink = document.getElementById('logo-link');
@@ -562,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateAuthUI(user);
         // After everything is ready, show library if at /library
         if (window.location.pathname === '/library') {
-            showLibraryPage(false);
+            // This logic is now handled by the library page's JS
         }
       });
       await checkMagicLink();
