@@ -98,118 +98,48 @@
     <hr style="margin:2em 0;">
     <p><strong>By using Basic TTS, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</strong></p>
   </main>
+  <script src="/static/app.js"></script>
   <script>
-// Account dropdown logic (copied from app.js)
-let accountDropdownOpen = false;
-let accountDropdown = null;
-let accountDropdownCloseHandler = null;
-function createOrToggleAccountDropdown() {
-    const accountLinkEl = document.getElementById('account-link');
-    let dropdown = document.getElementById('account-modal');
-    if (dropdown && accountDropdownOpen) {
-        dropdown.style.display = 'none';
-        accountDropdownOpen = false;
-        if (accountDropdownCloseHandler) {
-            document.removeEventListener('mousedown', accountDropdownCloseHandler);
-            accountDropdownCloseHandler = null;
-        }
-        return;
-    }
-    if (dropdown) dropdown.remove();
-    // Create dropdown
-    const rect = accountLinkEl.getBoundingClientRect();
-    dropdown = document.createElement('div');
-    dropdown.id = 'account-modal';
-    dropdown.className = 'modal';
-    dropdown.style.display = 'block';
-    dropdown.style.position = 'absolute';
-    dropdown.style.top = (window.scrollY + rect.bottom + 8) + 'px';
-    dropdown.style.left = (window.scrollX + rect.right - 240) + 'px';
-    dropdown.style.width = '240px';
-    dropdown.style.background = '#fff';
-    dropdown.style.borderRadius = '10px';
-    dropdown.style.boxShadow = '0 4px 24px rgba(0,0,0,0.13)';
-    dropdown.style.zIndex = '1000';
-    dropdown.style.padding = '1.2em 0 0.5em 0';
-    dropdown.innerHTML = `
-      <ul id="account-options" style="list-style:none; padding:0 0 0.5em 0; margin:0;">
-        <li><a href="/library" id="my-library-link" class="account-link" style="display:block; padding:0.7em 1.5em;">My Library</a></li>
-        <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 1.5em;">Terms of Service</a></li>
-        <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 1.5em;">Privacy Policy</a></li>
-      </ul>
-      <button id="logout-button" class="btn btn-secondary" style="margin:0.5em 1.5em 0.5em 1.5em; width:calc(100% - 3em);">Log Out</button>
-    `;
-    document.body.appendChild(dropdown);
-    accountDropdownOpen = true;
-    accountDropdown = dropdown;
-    // Close dropdown if click outside or on Account again
-    accountDropdownCloseHandler = function(e) {
-        if (!dropdown.contains(e.target) && e.target !== accountLinkEl) {
-            dropdown.style.display = 'none';
-            accountDropdownOpen = false;
-            document.removeEventListener('mousedown', accountDropdownCloseHandler);
-            accountDropdownCloseHandler = null;
-        }
-    };
-    setTimeout(() => {
-        document.addEventListener('mousedown', accountDropdownCloseHandler);
-    }, 0);
-    // Close dropdown on link click
-    dropdown.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-            dropdown.style.display = 'none';
-            accountDropdownOpen = false;
-            if (accountDropdownCloseHandler) {
-                document.removeEventListener('mousedown', accountDropdownCloseHandler);
-                accountDropdownCloseHandler = null;
-            }
-        });
+// On page load, update header links based on auth state
+(async function() {
+  if (!window.firebase) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
     });
-    // Log Out button logic
-    const logoutButton = dropdown.querySelector('#logout-button');
-    if (logoutButton) {
-        logoutButton.onclick = async () => {
-            if (window.firebase && window.firebase.auth) {
-                await firebaseAuth.signOut();
-            }
-            dropdown.style.display = 'none';
-            accountDropdownOpen = false;
-            if (accountDropdownCloseHandler) {
-                document.removeEventListener('mousedown', accountDropdownCloseHandler);
-                accountDropdownCloseHandler = null;
-            }
-            document.getElementById('user-info').style.display = 'none';
-            document.getElementById('auth-links').style.display = 'inline';
-            window.location.href = '/';
-        };
-    }
-}
-function attachAccountDropdownHandler() {
-    const accountLink = document.getElementById('account-link');
-    if (accountLink) {
-        accountLink.onclick = (e) => {
-            e.preventDefault();
-            createOrToggleAccountDropdown();
-        };
-    }
-}
-window.addEventListener('popstate', function() {
-    const dropdown = document.getElementById('account-modal');
-    if (dropdown) {
-        dropdown.style.display = 'none';
-        accountDropdownOpen = false;
-        if (accountDropdownCloseHandler) {
-            document.removeEventListener('mousedown', accountDropdownCloseHandler);
-            accountDropdownCloseHandler = null;
-        }
-    }
-});
-document.addEventListener('DOMContentLoaded', function() {
-  const userInfo = document.getElementById('user-info');
-  if (userInfo && userInfo.querySelector('#account-link')) {
-    attachAccountDropdownHandler();
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
   }
-});
+  const res = await fetch('/firebase-config');
+  const config = await res.json();
+  if (!window._termsFirebaseApp) {
+    window._termsFirebaseApp = firebase.initializeApp(config, 'terms');
+  }
+  const firebaseAuth = firebase.auth(window._termsFirebaseApp);
+  const authLinks = document.getElementById('auth-links');
+  const userInfo = document.getElementById('user-info');
+  firebaseAuth.onAuthStateChanged(user => {
+    if (user) {
+      authLinks.style.display = 'none';
+      userInfo.style.display = 'inline';
+      userInfo.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
+      if (window.attachAccountDropdownHandler) {
+        attachAccountDropdownHandler();
+      }
+    } else {
+      userInfo.style.display = 'none';
+      authLinks.style.display = 'inline';
+    }
+  });
+})();
   </script>
 </body>
 </html> 
