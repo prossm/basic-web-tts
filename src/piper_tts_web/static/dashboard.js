@@ -122,7 +122,7 @@ function showPlayModal(audioUrl, errorMsg) {
   modal.style.alignItems = 'center';
   modal.style.justifyContent = 'center';
   modal.innerHTML = `
-    <div style="background:#fff; padding:2em; border-radius:10px; max-width:400px; margin:auto; position:relative;">
+    <div style="background:#fff; padding:2em; border-radius:10px; max-width:400px; min-width:250px; margin:auto; position:relative;">
       <span id="close-play-modal" style="position:absolute; top:10px; right:16px; font-size:1.5em; cursor:pointer;">&times;</span>
       ${audioUrl ? `<audio src="${audioUrl}" controls style="width:100%; margin-top:1em;"></audio>` : `<div style='color:#b00; margin-top:2em;'>${errorMsg || 'Audio unavailable.'}</div>`}
     </div>
