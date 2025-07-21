@@ -159,8 +159,8 @@ async def delete_recording(recording_id: str, uid: str = Depends(get_user_uid)):
 
 @app.get("/dashboard-recordings")
 async def dashboard_recordings(authorization: Optional[str] = Header(None)):
-    if not db:
-        raise HTTPException(status_code=500, detail="Firestore not available")
+    if not db or not bucket:
+        raise HTTPException(status_code=500, detail="Firestore or Storage not available")
     # Authenticate and check superuser
     uid = None
     if authorization and authorization.startswith("Bearer "):
@@ -175,22 +175,46 @@ async def dashboard_recordings(authorization: Optional[str] = Header(None)):
     user_doc = db.collection("users").document(uid).get()
     if not user_doc.exists or not user_doc.to_dict().get("superuser"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-    # Query all users and their recordings
-    users = db.collection("users").stream()
-    all_recordings = []
-    for user in users:
-        user_data = user.to_dict()
-        user_email = user_data.get("email", "")
-        user_uid = user.id
-        recs = db.collection("users").document(user_uid).collection("recordings").stream()
-        for rec in recs:
+
+    # 1. List all blobs in audio/
+    blobs = list(bucket.list_blobs(prefix="audio/"))
+    results = []
+    # 2. Build a map of storagePath -> (recording, user_email)
+    storage_to_recording = {}
+    user_id_to_email = {}
+    # Preload all user emails
+    for user in db.collection("users").stream():
+        user_id_to_email[user.id] = user.to_dict().get("email", "")
+        # Preload all recordings for this user
+        for rec in db.collection("users").document(user.id).collection("recordings").stream():
             rec_data = rec.to_dict()
-            rec_data["user_email"] = user_email
-            rec_data["user_uid"] = user_uid
-            all_recordings.append(rec_data)
-    # Sort reverse chronologically
-    all_recordings.sort(key=lambda r: r.get("created", 0), reverse=True)
-    return all_recordings
+            if rec_data.get("storagePath"):
+                storage_to_recording[rec_data["storagePath"]] = (rec_data, user_id_to_email[user.id], user.id)
+    # 3. For each blob, try to find a matching Firestore record
+    for blob in blobs:
+        if not blob.name.endswith('.wav'):
+            continue
+        entry = {
+            "storagePath": blob.name,
+            "audioUrl": blob.public_url,
+            "blobCreated": blob.time_created.timestamp() if blob.time_created else 0,
+            "blobName": blob.name.split('/')[-1],
+        }
+        rec_tuple = storage_to_recording.get(blob.name)
+        if rec_tuple:
+            rec_data, user_email, user_uid = rec_tuple
+            entry.update({
+                "id": rec_data.get("id"),
+                "voice": rec_data.get("voice"),
+                "text": rec_data.get("text"),
+                "created": rec_data.get("created"),
+                "user_email": user_email,
+                "user_uid": user_uid,
+            })
+        results.append(entry)
+    # 4. Sort: prefer Firestore 'created', else blobCreated
+    results.sort(key=lambda r: r.get("created", r.get("blobCreated", 0)), reverse=True)
+    return results
 
 @app.get("/user-info")
 async def get_user_info(authorization: Optional[str] = Header(None)):
