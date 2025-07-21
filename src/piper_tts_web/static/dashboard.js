@@ -65,11 +65,17 @@ async function loadDashboardList() {
       // Info
       const infoDiv = document.createElement('div');
       infoDiv.style.flex = '1';
+      // Use blobCreated if created is missing
+      const dateStr = rec.created ? formatDateTime(rec.created) : (rec.blobCreated ? formatDateTime(rec.blobCreated) : '');
+      // Use blobName if text is missing
+      const textStr = rec.text ? truncateText(rec.text, 20) : (rec.blobName ? rec.blobName : '(no text)');
+      // Show (anonymous) if no user_email
+      const userStr = rec.user_email ? 'User: ' + rec.user_email : '(anonymous)';
       infoDiv.innerHTML = `
-        <div style="font-size:0.98em; color:#333;">${formatDateTime(rec.created)}</div>
+        <div style="font-size:0.98em; color:#333;">${dateStr}</div>
         <div style="font-size:0.97em; color:#666;">${rec.voice || ''}</div>
-        <div style="font-size:1.05em; color:#222; margin-top:0.2em;">${truncateText(rec.text, 20)}</div>
-        <div style="font-size:0.97em; color:#4a90e2; margin-top:0.2em;">${rec.user_email ? 'User: ' + rec.user_email : ''}</div>
+        <div style="font-size:1.05em; color:#222; margin-top:0.2em;">${textStr}</div>
+        <div style="font-size:0.97em; color:#4a90e2; margin-top:0.2em;">${userStr}</div>
       `;
       li.appendChild(infoDiv);
       // Play icon (SVG)
@@ -84,7 +90,11 @@ async function loadDashboardList() {
       playBtn.style.marginRight = '0.7em';
       playBtn.onclick = (e) => {
         e.preventDefault();
-        showPlayModal(rec.audioUrl);
+        if (rec.audioUrl) {
+          showPlayModal(rec.audioUrl);
+        } else {
+          showPlayModal(null, 'Audio unavailable for this recording.');
+        }
       };
       iconsDiv.appendChild(playBtn);
       li.appendChild(iconsDiv);
@@ -95,8 +105,8 @@ async function loadDashboardList() {
   }
 }
 
-function showPlayModal(audioUrl) {
-  // Simple modal for playback
+function showPlayModal(audioUrl, errorMsg) {
+  // Simple modal for playback or error
   let modal = document.getElementById('play-modal');
   if (modal) modal.remove();
   modal = document.createElement('div');
@@ -114,7 +124,7 @@ function showPlayModal(audioUrl) {
   modal.innerHTML = `
     <div style="background:#fff; padding:2em; border-radius:10px; max-width:400px; margin:auto; position:relative;">
       <span id="close-play-modal" style="position:absolute; top:10px; right:16px; font-size:1.5em; cursor:pointer;">&times;</span>
-      <audio src="${audioUrl}" controls style="width:100%; margin-top:1em;"></audio>
+      ${audioUrl ? `<audio src="${audioUrl}" controls style="width:100%; margin-top:1em;"></audio>` : `<div style='color:#b00; margin-top:2em;'>${errorMsg || 'Audio unavailable.'}</div>`}
     </div>
   `;
   document.body.appendChild(modal);
