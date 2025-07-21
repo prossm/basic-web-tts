@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
       firebaseAuth.onAuthStateChanged(user => {
         firebaseUser = user;
         updateAuthUI(user);
-        checkSuperuserAndShowDashboardLink(user);
+        setTimeout(() => checkSuperuserAndShowDashboardLink(user), 0);
         // After everything is ready, show library if at /library
         if (window.location.pathname === '/library') {
             // This logic is now handled by the library page's JS
