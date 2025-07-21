@@ -153,6 +153,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const config = await res.json();
       firebaseApp = firebase.initializeApp(config);
       firebaseAuth = firebase.auth();
+      window.firebaseApp = firebaseApp;
+      window.firebaseAuth = firebaseAuth;
     }
 
     // UI Elements
