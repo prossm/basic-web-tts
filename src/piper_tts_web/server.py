@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 import shutil
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -120,6 +120,14 @@ def get_user_uid(authorization: Optional[str] = Header(None)):
 async def create_or_update_user(user: dict, uid: str = Depends(get_user_uid)):
     if not db or not uid:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    # Always store the user's email in the Firestore user doc
+    if 'email' not in user or not user['email']:
+        # Try to fetch email from Firebase Auth
+        try:
+            auth_user = firebase_admin.auth.get_user(uid)
+            user['email'] = auth_user.email
+        except Exception as e:
+            user['email'] = None
     db.collection("users").document(uid).set(user, merge=True)
     return {"status": "ok"}
 
@@ -148,6 +156,60 @@ async def delete_recording(recording_id: str, uid: str = Depends(get_user_uid)):
     # Mark as deleted instead of deleting
     ref.set({"deleted": True}, merge=True)
     return {"status": "marked_deleted"}
+
+@app.get("/dashboard-recordings")
+async def dashboard_recordings(authorization: Optional[str] = Header(None)):
+    if not db:
+        raise HTTPException(status_code=500, detail="Firestore not available")
+    # Authenticate and check superuser
+    uid = None
+    if authorization and authorization.startswith("Bearer "):
+        id_token = authorization.split(" ", 1)[1]
+        try:
+            decoded = firebase_admin.auth.verify_id_token(id_token)
+            uid = decoded["uid"]
+        except Exception:
+            uid = None
+    if not uid:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_doc = db.collection("users").document(uid).get()
+    if not user_doc.exists or not user_doc.to_dict().get("superuser"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    # Query all users and their recordings
+    users = db.collection("users").stream()
+    all_recordings = []
+    for user in users:
+        user_data = user.to_dict()
+        user_email = user_data.get("email", "")
+        user_uid = user.id
+        recs = db.collection("users").document(user_uid).collection("recordings").stream()
+        for rec in recs:
+            rec_data = rec.to_dict()
+            rec_data["user_email"] = user_email
+            rec_data["user_uid"] = user_uid
+            all_recordings.append(rec_data)
+    # Sort reverse chronologically
+    all_recordings.sort(key=lambda r: r.get("created", 0), reverse=True)
+    return all_recordings
+
+@app.get("/user-info")
+async def get_user_info(authorization: Optional[str] = Header(None)):
+    if not db:
+        raise HTTPException(status_code=500, detail="Firestore not available")
+    uid = None
+    if authorization and authorization.startswith("Bearer "):
+        id_token = authorization.split(" ", 1)[1]
+        try:
+            decoded = firebase_admin.auth.verify_id_token(id_token)
+            uid = decoded["uid"]
+        except Exception:
+            uid = None
+    if not uid:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_doc = db.collection("users").document(uid).get()
+    if not user_doc.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user_doc.to_dict()
 
 
 class SynthesisRequest(BaseModel):
