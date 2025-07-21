@@ -193,6 +193,8 @@ async function loadLibraryList() {
     let recordings = await res.json();
     // Filter out deleted recordings
     recordings = recordings.filter(r => !r.deleted);
+    // Sort recordings reverse chronologically (most recent first)
+    recordings.sort((a, b) => (b.created || 0) - (a.created || 0));
     if (!recordings.length) {
       libraryList.innerHTML = '<li>No recordings yet.</li>';
       return;
