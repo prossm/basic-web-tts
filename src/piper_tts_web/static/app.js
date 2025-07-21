@@ -278,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateAuthUI(user) {
+      console.log('[updateAuthUI] Called with user:', user);
       if (user) {
         // Hide auth links, show Account
         if (authLinks) authLinks.style.display = 'none';
@@ -645,33 +646,52 @@ document.addEventListener('DOMContentLoaded', function() {
 }); 
 
 async function checkSuperuserAndShowDashboardLink(user) {
-  if (!user) return;
-  if (!window.firebaseAuth) return;
-  const firebaseIdToken = await window.firebaseAuth.currentUser.getIdToken();
-  const res = await fetch(`/user-info`, {
-    headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
-  });
-  if (!res.ok) return;
-  const userInfoData = await res.json();
-  if (userInfoData.superuser) {
-    // Add Dashboard link to header if not present
-    let aboutLink = document.getElementById('about-link');
-    if (aboutLink && !document.getElementById('dashboard-link')) {
-      const dashLink = document.createElement('a');
-      dashLink.href = '/dashboard';
-      dashLink.id = 'dashboard-link';
-      dashLink.textContent = 'Dashboard';
-      dashLink.style.textDecoration = 'none';
-      dashLink.style.fontWeight = '500';
-      dashLink.style.fontSize = '1.1em';
-      dashLink.style.color = '#222';
-      dashLink.style.marginLeft = '1.5em';
-      // Insert after About link
-      if (aboutLink.nextSibling) {
-        aboutLink.parentNode.insertBefore(dashLink, aboutLink.nextSibling);
-      } else {
-        aboutLink.parentNode.appendChild(dashLink);
-      }
+  console.log('[checkSuperuserAndShowDashboardLink] Called with user:', user);
+  if (!user) {
+    console.log('[checkSuperuserAndShowDashboardLink] No user, returning');
+    return;
+  }
+  if (!window.firebaseAuth) {
+    console.log('[checkSuperuserAndShowDashboardLink] No firebaseAuth, returning');
+    return;
+  }
+  try {
+    const firebaseIdToken = await window.firebaseAuth.currentUser.getIdToken();
+    const res = await fetch(`/user-info`, {
+      headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+    });
+    if (!res.ok) {
+      console.log('[checkSuperuserAndShowDashboardLink] /user-info not ok:', res.status);
+      return;
     }
+    const userInfoData = await res.json();
+    console.log('[checkSuperuserAndShowDashboardLink] userInfoData:', userInfoData);
+    if (userInfoData.superuser) {
+      let aboutLink = document.getElementById('about-link');
+      if (aboutLink && !document.getElementById('dashboard-link')) {
+        const dashLink = document.createElement('a');
+        dashLink.href = '/dashboard';
+        dashLink.id = 'dashboard-link';
+        dashLink.textContent = 'Dashboard';
+        dashLink.style.textDecoration = 'none';
+        dashLink.style.fontWeight = '500';
+        dashLink.style.fontSize = '1.1em';
+        dashLink.style.color = '#222';
+        dashLink.style.marginLeft = '1.5em';
+        // Insert after About link
+        if (aboutLink.nextSibling) {
+          aboutLink.parentNode.insertBefore(dashLink, aboutLink.nextSibling);
+        } else {
+          aboutLink.parentNode.appendChild(dashLink);
+        }
+        console.log('[checkSuperuserAndShowDashboardLink] Dashboard link injected');
+      } else {
+        console.log('[checkSuperuserAndShowDashboardLink] Dashboard link already present or About link missing');
+      }
+    } else {
+      console.log('[checkSuperuserAndShowDashboardLink] Not a superuser');
+    }
+  } catch (err) {
+    console.error('[checkSuperuserAndShowDashboardLink] Error:', err);
   }
 } 
