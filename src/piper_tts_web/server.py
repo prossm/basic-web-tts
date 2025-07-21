@@ -277,6 +277,20 @@ async def get_privacy():
         raise HTTPException(status_code=404, detail="Privacy page not found")
     return FileResponse(privacy_path)
 
+@app.get("/dashboard", response_class=HTMLResponse)
+async def get_dashboard():
+    dashboard_path = PACKAGE_DIR / "static" / "dashboard.html"
+    if not dashboard_path.exists():
+        raise HTTPException(status_code=404, detail="Dashboard page not found")
+    return FileResponse(dashboard_path)
+
+@app.get("/dashboard.html", response_class=HTMLResponse)
+async def get_dashboard_html():
+    dashboard_path = PACKAGE_DIR / "static" / "dashboard.html"
+    if not dashboard_path.exists():
+        raise HTTPException(status_code=404, detail="Dashboard page not found")
+    return FileResponse(dashboard_path)
+
 
 @app.get("/voices")
 async def list_voices():
