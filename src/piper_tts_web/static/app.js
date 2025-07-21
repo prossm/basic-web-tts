@@ -646,7 +646,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function checkSuperuserAndShowDashboardLink(user) {
   if (!user) return;
-  const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+  if (!window.firebaseAuth) return;
+  const firebaseIdToken = await window.firebaseAuth.currentUser.getIdToken();
   const res = await fetch(`/user-info`, {
     headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
   });
