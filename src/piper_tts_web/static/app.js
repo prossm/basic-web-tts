@@ -643,3 +643,34 @@ document.addEventListener('DOMContentLoaded', function() {
       aboutLink.href = '/about';
     }
 }); 
+
+async function checkSuperuserAndShowDashboardLink(user) {
+  if (!user) return;
+  const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+  const res = await fetch(`/user-info`, {
+    headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+  });
+  if (!res.ok) return;
+  const userInfoData = await res.json();
+  if (userInfoData.superuser) {
+    // Add Dashboard link to header if not present
+    let aboutLink = document.getElementById('about-link');
+    if (aboutLink && !document.getElementById('dashboard-link')) {
+      const dashLink = document.createElement('a');
+      dashLink.href = '/dashboard';
+      dashLink.id = 'dashboard-link';
+      dashLink.textContent = 'Dashboard';
+      dashLink.style.textDecoration = 'none';
+      dashLink.style.fontWeight = '500';
+      dashLink.style.fontSize = '1.1em';
+      dashLink.style.color = '#222';
+      dashLink.style.marginLeft = '1.5em';
+      // Insert after About link
+      if (aboutLink.nextSibling) {
+        aboutLink.parentNode.insertBefore(dashLink, aboutLink.nextSibling);
+      } else {
+        aboutLink.parentNode.appendChild(dashLink);
+      }
+    }
+  }
+} 
