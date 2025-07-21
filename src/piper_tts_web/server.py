@@ -438,17 +438,29 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                 except Exception:
                     uid = None
             logger.info(f"uid: {uid}")
-            if db and uid:
-                import time
-                recording_doc = {
-                    "id": f"{request.voice}_{text_hash}",
-                    "voice": request.voice,
-                    "text": request.text,
-                    "created": int(time.time()),
-                    "audioUrl": firebase_url,
-                    "storagePath": storage_path
-                }
-                db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
+            if db:
+                if uid:
+                    recording_doc = {
+                        "id": f"{request.voice}_{text_hash}",
+                        "voice": request.voice,
+                        "text": request.text,
+                        "created": int(time.time()),
+                        "audioUrl": firebase_url,
+                        "storagePath": storage_path
+                    }
+                    db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
+                else:
+                    # Store anonymous recording in top-level 'recordings' collection
+                    recording_doc = {
+                        "id": f"{request.voice}_{text_hash}",
+                        "voice": request.voice,
+                        "text": request.text,
+                        "created": int(time.time()),
+                        "audioUrl": firebase_url,
+                        "storagePath": storage_path,
+                        "anonymous": True
+                    }
+                    db.collection("recordings").document(recording_doc["id"]).set(recording_doc)
             # Return the audio file as a response
             if firebase_url:
                 return {"audioUrl": firebase_url}
