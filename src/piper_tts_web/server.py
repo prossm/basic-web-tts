@@ -211,6 +211,7 @@ async def dashboard_recordings(authorization: Optional[str] = Header(None)):
                 "created": rec_data.get("created"),
                 "user_email": user_email,
                 "user_uid": user_uid,
+                "duration": rec_data.get("duration"),
             })
         results.append(entry)
     # 4. Sort: prefer Firestore 'created', else blobCreated
@@ -439,6 +440,17 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                 except Exception:
                     uid = None
             logger.info(f"uid: {uid}")
+            # Calculate audio duration
+            duration = None
+            try:
+                import wave
+                with wave.open(str(output_file), 'rb') as wav_file:
+                    frames = wav_file.getnframes()
+                    sample_rate = wav_file.getframerate()
+                    duration = frames / sample_rate
+            except Exception as e:
+                logger.warning(f"Could not calculate audio duration: {e}")
+            
             if db:
                 if uid:
                     recording_doc = {
@@ -447,7 +459,8 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                         "text": request.text,
                         "created": int(time.time()),
                         "audioUrl": firebase_url,
-                        "storagePath": storage_path
+                        "storagePath": storage_path,
+                        "duration": duration
                     }
                     db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
                 else:
@@ -459,7 +472,8 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                         "created": int(time.time()),
                         "audioUrl": firebase_url,
                         "storagePath": storage_path,
-                        "anonymous": True
+                        "anonymous": True,
+                        "duration": duration
                     }
                     db.collection("recordings").document(recording_doc["id"]).set(recording_doc)
             # Return the audio file as a response

@@ -15,6 +15,13 @@ function truncateText(txt, n) {
   return txt.length > n ? txt.slice(0, n) + '…' : txt;
 }
 
+function formatDuration(seconds) {
+  if (!seconds || isNaN(seconds)) return '';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 async function loadFirebase() {
   if (!window.firebase) {
     await new Promise((resolve, reject) => {
@@ -71,8 +78,9 @@ async function loadDashboardList() {
       const textStr = rec.text ? truncateText(rec.text, 20) : (rec.blobName ? rec.blobName : '(no text)');
       // Show (anonymous) if no user_email
       const userStr = rec.user_email ? 'User: ' + rec.user_email : '(anonymous)';
+      const durationStr = rec.duration ? formatDuration(rec.duration) : '';
       infoDiv.innerHTML = `
-        <div style="font-size:0.98em; color:#333;">${dateStr}</div>
+        <div style="font-size:0.98em; color:#333;">${dateStr}${durationStr ? ' • ' + durationStr : ''}</div>
         <div style="font-size:0.97em; color:#666;">${rec.voice || ''}</div>
         <div style="font-size:1.05em; color:#222; margin-top:0.2em;">${textStr}</div>
         <div style="font-size:0.97em; color:#4a90e2; margin-top:0.2em;">${userStr}</div>
