@@ -2,6 +2,9 @@
 
 const dashboardList = document.getElementById('dashboard-list');
 
+let currentPage = 1;
+let totalPages = 1;
+
 let firebaseApp = null;
 let firebaseAuth = null;
 
@@ -45,20 +48,27 @@ async function loadFirebase() {
   firebaseAuth = firebase.auth();
 }
 
-async function loadDashboardList() {
+async function loadDashboardList(page = 1) {
   dashboardList.innerHTML = '<li>Loading...</li>';
   try {
     const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
-    const res = await fetch('/dashboard-recordings', {
+    const res = await fetch(`/dashboard-recordings?page=${page}&limit=50`, {
       headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
     });
     if (!res.ok) {
       dashboardList.innerHTML = '<li>Access denied or failed to load recordings.</li>';
       return;
     }
-    let recordings = await res.json();
+    const data = await res.json();
+    const recordings = data.recordings;
+    const pagination = data.pagination;
+    
+    currentPage = pagination.page;
+    totalPages = pagination.total_pages;
+    
     if (!recordings.length) {
       dashboardList.innerHTML = '<li>No recordings found.</li>';
+      updatePaginationControls();
       return;
     }
     dashboardList.innerHTML = '';
@@ -108,6 +118,7 @@ async function loadDashboardList() {
       li.appendChild(iconsDiv);
       dashboardList.appendChild(li);
     });
+    updatePaginationControls();
   } catch (err) {
     dashboardList.innerHTML = '<li>Access denied or failed to load recordings.</li>';
   }
@@ -138,6 +149,41 @@ function showPlayModal(audioUrl, errorMsg) {
   document.body.appendChild(modal);
   document.getElementById('close-play-modal').onclick = () => { modal.remove(); };
   window.onclick = (e) => { if (e.target === modal) { modal.remove(); } };
+}
+
+function updatePaginationControls() {
+  const paginationControls = document.getElementById('pagination-controls');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const pageInfo = document.getElementById('page-info');
+  
+  if (totalPages <= 1) {
+    paginationControls.style.display = 'none';
+    return;
+  }
+  
+  paginationControls.style.display = 'block';
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+  
+  prevBtn.disabled = currentPage === 1;
+  nextBtn.disabled = currentPage === totalPages;
+  
+  prevBtn.style.opacity = currentPage === 1 ? '0.5' : '1';
+  nextBtn.style.opacity = currentPage === totalPages ? '0.5' : '1';
+  prevBtn.style.cursor = currentPage === 1 ? 'not-allowed' : 'pointer';
+  nextBtn.style.cursor = currentPage === totalPages ? 'not-allowed' : 'pointer';
+  
+  prevBtn.onclick = () => {
+    if (currentPage > 1) {
+      loadDashboardList(currentPage - 1);
+    }
+  };
+  
+  nextBtn.onclick = () => {
+    if (currentPage < totalPages) {
+      loadDashboardList(currentPage + 1);
+    }
+  };
 }
 
 (async function() {

@@ -159,7 +159,7 @@ async def delete_recording(recording_id: str, uid: str = Depends(get_user_uid)):
     return {"status": "marked_deleted"}
 
 @app.get("/dashboard-recordings")
-async def dashboard_recordings(authorization: Optional[str] = Header(None)):
+async def dashboard_recordings(authorization: Optional[str] = Header(None), page: int = 1, limit: int = 50):
     if not db or not bucket:
         raise HTTPException(status_code=500, detail="Firestore or Storage not available")
     # Authenticate and check superuser
@@ -216,7 +216,24 @@ async def dashboard_recordings(authorization: Optional[str] = Header(None)):
         results.append(entry)
     # 4. Sort: prefer Firestore 'created', else blobCreated
     results.sort(key=lambda r: r.get("created", r.get("blobCreated", 0)), reverse=True)
-    return results
+    
+    # 5. Apply pagination
+    total_count = len(results)
+    start_index = (page - 1) * limit
+    end_index = start_index + limit
+    paginated_results = results[start_index:end_index]
+    
+    return {
+        "recordings": paginated_results,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total_count,
+            "total_pages": (total_count + limit - 1) // limit,
+            "has_next": end_index < total_count,
+            "has_prev": page > 1
+        }
+    }
 
 @app.get("/user-info")
 async def get_user_info(authorization: Optional[str] = Header(None)):
