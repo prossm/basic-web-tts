@@ -196,19 +196,23 @@ async def dashboard_recordings(
         if user_email and user_email.lower() not in email.lower():
             continue
             
+        # Get all recordings for this user (no Firestore filters for compatibility)
         query = db.collection("users").document(user_id).collection("recordings")
         
-        # Apply filters
-        if voice:
-            query = query.where("voiceLower", "==", voice.lower())
-        if search:
-            search_words = [word.lower().strip('.,!?;:"()[]{}') for word in search.lower().split() if len(word.strip('.,!?;:"()[]{}')) > 2]
-            if search_words:
-                query = query.where("textWords", "array_contains_any", search_words)
-        
-        # Get results
+        # Get results and filter in Python (for compatibility with existing records)
         for doc in query.stream():
             rec_data = doc.to_dict()
+            
+            # Apply voice filter
+            if voice and rec_data.get("voice", "").lower() != voice.lower():
+                continue
+                
+            # Apply text search filter
+            if search:
+                text_content = rec_data.get("text", "").lower()
+                if search.lower() not in text_content:
+                    continue
+            
             entry = {
                 "id": rec_data.get("id"),
                 "voice": rec_data.get("voice"),
@@ -226,17 +230,20 @@ async def dashboard_recordings(
     if not user_email:  # Only include anonymous if not filtering by user
         query = db.collection("recordings")
         
-        # Apply filters
-        if voice:
-            query = query.where("voiceLower", "==", voice.lower())
-        if search:
-            search_words = [word.lower().strip('.,!?;:"()[]{}') for word in search.lower().split() if len(word.strip('.,!?;:"()[]{}')) > 2]
-            if search_words:
-                query = query.where("textWords", "array_contains_any", search_words)
-        
-        # Get results
+        # Get results and filter in Python (for compatibility with existing records)
         for doc in query.stream():
             rec_data = doc.to_dict()
+            
+            # Apply voice filter
+            if voice and rec_data.get("voice", "").lower() != voice.lower():
+                continue
+                
+            # Apply text search filter
+            if search:
+                text_content = rec_data.get("text", "").lower()
+                if search.lower() not in text_content:
+                    continue
+            
             entry = {
                 "id": rec_data.get("id"),
                 "voice": rec_data.get("voice"),
