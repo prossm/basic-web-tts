@@ -159,9 +159,16 @@ async def delete_recording(recording_id: str, uid: str = Depends(get_user_uid)):
     return {"status": "marked_deleted"}
 
 @app.get("/dashboard-recordings")
-async def dashboard_recordings(authorization: Optional[str] = Header(None), page: int = 1, limit: int = 50):
-    if not db or not bucket:
-        raise HTTPException(status_code=500, detail="Firestore or Storage not available")
+async def dashboard_recordings(
+    authorization: Optional[str] = Header(None), 
+    page: int = 1, 
+    limit: int = 50,
+    search: Optional[str] = None,
+    voice: Optional[str] = None,
+    user_email: Optional[str] = None
+):
+    if not db:
+        raise HTTPException(status_code=500, detail="Firestore not available")
     # Authenticate and check superuser
     uid = None
     if authorization and authorization.startswith("Bearer "):
@@ -177,53 +184,76 @@ async def dashboard_recordings(authorization: Optional[str] = Header(None), page
     if not user_doc.exists or not user_doc.to_dict().get("superuser"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
-    # 1. List all blobs in audio/
-    blobs = list(bucket.list_blobs(prefix="audio/"))
-    results = []
-    # 2. Build a map of storagePath -> (recording, user_email)
-    storage_to_recording = {}
+    # Build user email lookup
     user_id_to_email = {}
-    # Preload all user emails
     for user in db.collection("users").stream():
         user_id_to_email[user.id] = user.to_dict().get("email", "")
-        # Preload all recordings for this user
-        for rec in db.collection("users").document(user.id).collection("recordings").stream():
-            rec_data = rec.to_dict()
-            if rec_data.get("storagePath"):
-                storage_to_recording[rec_data["storagePath"]] = (rec_data, user_id_to_email[user.id], user.id)
+
+    results = []
     
-    # Preload anonymous recordings from top-level collection
-    for rec in db.collection("recordings").stream():
-        rec_data = rec.to_dict()
-        if rec_data.get("storagePath"):
-            storage_to_recording[rec_data["storagePath"]] = (rec_data, None, None)
-    # 3. For each blob, try to find a matching Firestore record
-    for blob in blobs:
-        if not blob.name.endswith('.wav'):
+    # Query user recordings
+    for user_id, email in user_id_to_email.items():
+        if user_email and user_email.lower() not in email.lower():
             continue
-        entry = {
-            "storagePath": blob.name,
-            "audioUrl": blob.public_url,
-            "blobCreated": blob.time_created.timestamp() if blob.time_created else 0,
-            "blobName": blob.name.split('/')[-1],
-        }
-        rec_tuple = storage_to_recording.get(blob.name)
-        if rec_tuple:
-            rec_data, user_email, user_uid = rec_tuple
-            entry.update({
+            
+        query = db.collection("users").document(user_id).collection("recordings")
+        
+        # Apply filters
+        if voice:
+            query = query.where("voiceLower", "==", voice.lower())
+        if search:
+            search_words = [word.lower().strip('.,!?;:"()[]{}') for word in search.lower().split() if len(word.strip('.,!?;:"()[]{}')) > 2]
+            if search_words:
+                query = query.where("textWords", "array_contains_any", search_words)
+        
+        # Get results
+        for doc in query.stream():
+            rec_data = doc.to_dict()
+            entry = {
                 "id": rec_data.get("id"),
                 "voice": rec_data.get("voice"),
                 "text": rec_data.get("text"),
                 "created": rec_data.get("created"),
-                "user_email": user_email,
-                "user_uid": user_uid,
+                "audioUrl": rec_data.get("audioUrl"),
+                "storagePath": rec_data.get("storagePath"),
                 "duration": rec_data.get("duration"),
-            })
-        results.append(entry)
-    # 4. Sort: prefer Firestore 'created', else blobCreated
-    results.sort(key=lambda r: r.get("created", r.get("blobCreated", 0)), reverse=True)
+                "user_email": email,
+                "user_uid": user_id,
+            }
+            results.append(entry)
     
-    # 5. Apply pagination
+    # Query anonymous recordings
+    if not user_email:  # Only include anonymous if not filtering by user
+        query = db.collection("recordings")
+        
+        # Apply filters
+        if voice:
+            query = query.where("voiceLower", "==", voice.lower())
+        if search:
+            search_words = [word.lower().strip('.,!?;:"()[]{}') for word in search.lower().split() if len(word.strip('.,!?;:"()[]{}')) > 2]
+            if search_words:
+                query = query.where("textWords", "array_contains_any", search_words)
+        
+        # Get results
+        for doc in query.stream():
+            rec_data = doc.to_dict()
+            entry = {
+                "id": rec_data.get("id"),
+                "voice": rec_data.get("voice"),
+                "text": rec_data.get("text"),
+                "created": rec_data.get("created"),
+                "audioUrl": rec_data.get("audioUrl"),
+                "storagePath": rec_data.get("storagePath"),
+                "duration": rec_data.get("duration"),
+                "user_email": None,
+                "user_uid": None,
+            }
+            results.append(entry)
+    
+    # Sort by creation time
+    results.sort(key=lambda r: r.get("created", 0), reverse=True)
+    
+    # Apply pagination
     total_count = len(results)
     start_index = (page - 1) * limit
     end_index = start_index + limit
@@ -475,6 +505,9 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                 logger.warning(f"Could not calculate audio duration: {e}")
             
             if db:
+                # Create searchable fields
+                text_words = [word.lower().strip('.,!?;:"()[]{}') for word in request.text.lower().split() if len(word.strip('.,!?;:"()[]{}')) > 2]
+                
                 if uid:
                     recording_doc = {
                         "id": f"{request.voice}_{text_hash}",
@@ -483,7 +516,9 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                         "created": int(time.time()),
                         "audioUrl": firebase_url,
                         "storagePath": storage_path,
-                        "duration": duration
+                        "duration": duration,
+                        "textWords": text_words,
+                        "voiceLower": request.voice.lower()
                     }
                     db.collection("users").document(uid).collection("recordings").document(recording_doc["id"]).set(recording_doc)
                 else:
@@ -496,7 +531,9 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                         "audioUrl": firebase_url,
                         "storagePath": storage_path,
                         "anonymous": True,
-                        "duration": duration
+                        "duration": duration,
+                        "textWords": text_words,
+                        "voiceLower": request.voice.lower()
                     }
                     db.collection("recordings").document(recording_doc["id"]).set(recording_doc)
             # Return the audio file as a response

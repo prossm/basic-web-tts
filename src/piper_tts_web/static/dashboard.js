@@ -4,6 +4,9 @@ const dashboardList = document.getElementById('dashboard-list');
 
 let currentPage = 1;
 let totalPages = 1;
+let currentSearch = '';
+let currentVoiceFilter = '';
+let currentUserFilter = '';
 
 let firebaseApp = null;
 let firebaseAuth = null;
@@ -52,7 +55,18 @@ async function loadDashboardList(page = 1) {
   dashboardList.innerHTML = '<li>Loading...</li>';
   try {
     const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
-    const res = await fetch(`/dashboard-recordings?page=${page}&limit=50`, {
+    
+    // Build query parameters
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: '50'
+    });
+    
+    if (currentSearch) params.append('search', currentSearch);
+    if (currentVoiceFilter) params.append('voice', currentVoiceFilter);
+    if (currentUserFilter) params.append('user_email', currentUserFilter);
+    
+    const res = await fetch(`/dashboard-recordings?${params.toString()}`, {
       headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
     });
     if (!res.ok) {
@@ -186,10 +200,50 @@ function updatePaginationControls() {
   };
 }
 
+function setupSearchHandlers() {
+  const searchInput = document.getElementById('search-input');
+  const voiceFilter = document.getElementById('voice-filter');
+  const userFilter = document.getElementById('user-filter');
+  const searchBtn = document.getElementById('search-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  
+  function performSearch() {
+    currentSearch = searchInput.value.trim();
+    currentVoiceFilter = voiceFilter.value.trim();
+    currentUserFilter = userFilter.value.trim();
+    currentPage = 1;
+    loadDashboardList(1);
+  }
+  
+  function clearSearch() {
+    searchInput.value = '';
+    voiceFilter.value = '';
+    userFilter.value = '';
+    currentSearch = '';
+    currentVoiceFilter = '';
+    currentUserFilter = '';
+    currentPage = 1;
+    loadDashboardList(1);
+  }
+  
+  searchBtn.addEventListener('click', performSearch);
+  clearBtn.addEventListener('click', clearSearch);
+  
+  // Enter key support
+  [searchInput, voiceFilter, userFilter].forEach(input => {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        performSearch();
+      }
+    });
+  });
+}
+
 (async function() {
   await loadFirebase();
   firebaseAuth.onAuthStateChanged(user => {
     if (user) {
+      setupSearchHandlers();
       loadDashboardList();
     } else {
       dashboardList.innerHTML = '<li>Please log in as a superuser to view the dashboard.</li>';
