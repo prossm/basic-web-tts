@@ -191,6 +191,12 @@ async def dashboard_recordings(authorization: Optional[str] = Header(None), page
             rec_data = rec.to_dict()
             if rec_data.get("storagePath"):
                 storage_to_recording[rec_data["storagePath"]] = (rec_data, user_id_to_email[user.id], user.id)
+    
+    # Preload anonymous recordings from top-level collection
+    for rec in db.collection("recordings").stream():
+        rec_data = rec.to_dict()
+        if rec_data.get("storagePath"):
+            storage_to_recording[rec_data["storagePath"]] = (rec_data, None, None)
     # 3. For each blob, try to find a matching Firestore record
     for blob in blobs:
         if not blob.name.endswith('.wav'):
