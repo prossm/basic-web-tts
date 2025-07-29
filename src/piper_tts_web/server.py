@@ -385,8 +385,8 @@ def find_piper_executable():
         "/usr/local/bin/piper",  # System-wide installation
         "/opt/homebrew/bin/piper",  # Homebrew on Apple Silicon
         "/usr/bin/piper",  # System bin
-        "/app/piper",  # Docker/container installs
-        # Legacy: old build-from-source location
+        # Legacy: old build-from-source and Docker locations
+        "/app/piper",  # Docker/container installs (legacy)
         os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             "piper",
