@@ -165,7 +165,8 @@ async def dashboard_recordings(
     limit: int = 50,
     search: Optional[str] = None,
     voice: Optional[str] = None,
-    user_email: Optional[str] = None
+    user_email: Optional[str] = None,
+    duration: Optional[str] = None
 ):
     if not db:
         raise HTTPException(status_code=500, detail="Firestore not available")
@@ -188,6 +189,28 @@ async def dashboard_recordings(
     user_id_to_email = {}
     for user in db.collection("users").stream():
         user_id_to_email[user.id] = user.to_dict().get("email", "")
+
+    def duration_matches_filter(duration_value, duration_filter):
+        """Check if duration matches the filter criteria"""
+        if not duration_filter or not duration_value:
+            return True
+        
+        duration_secs = float(duration_value)
+        
+        if duration_filter == "<5":
+            return duration_secs < 5
+        elif duration_filter == "5-10":
+            return 5 <= duration_secs < 10
+        elif duration_filter == "10-30":
+            return 10 <= duration_secs < 30
+        elif duration_filter == "30-60":
+            return 30 <= duration_secs < 60
+        elif duration_filter == "60-300":
+            return 60 <= duration_secs < 300
+        elif duration_filter == ">300":
+            return duration_secs >= 300
+        
+        return True
 
     results = []
     
@@ -212,6 +235,10 @@ async def dashboard_recordings(
                 text_content = rec_data.get("text", "").lower()
                 if search.lower() not in text_content:
                     continue
+            
+            # Apply duration filter
+            if not duration_matches_filter(rec_data.get("duration"), duration):
+                continue
             
             entry = {
                 "id": rec_data.get("id"),
@@ -243,6 +270,10 @@ async def dashboard_recordings(
                 text_content = rec_data.get("text", "").lower()
                 if search.lower() not in text_content:
                     continue
+            
+            # Apply duration filter
+            if not duration_matches_filter(rec_data.get("duration"), duration):
+                continue
             
             entry = {
                 "id": rec_data.get("id"),

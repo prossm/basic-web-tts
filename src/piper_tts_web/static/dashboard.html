@@ -34,6 +34,15 @@
         <select id="voice-filter" style="flex:0.5; min-width:150px; padding:0.5em; border:1px solid #ddd; border-radius:4px;">
           <option value="">All voices</option>
         </select>
+        <select id="duration-filter" style="flex:0.5; min-width:150px; padding:0.5em; border:1px solid #ddd; border-radius:4px;">
+          <option value="">All durations</option>
+          <option value="<5">&lt;5 sec</option>
+          <option value="5-10">5-10 sec</option>
+          <option value="10-30">10-30 sec</option>
+          <option value="30-60">30 sec to 1 min</option>
+          <option value="60-300">1 min to 5 min</option>
+          <option value=">300">&gt;5 min</option>
+        </select>
         <input type="text" id="user-filter" placeholder="Filter by user email..." style="flex:0.5; min-width:150px; padding:0.5em; border:1px solid #ddd; border-radius:4px;">
         <button id="search-btn" style="padding:0.5em 1em; background:#337ab7; color:white; border:none; border-radius:4px; cursor:pointer;">Search</button>
         <button id="clear-btn" style="padding:0.5em 1em; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer;">Clear</button>

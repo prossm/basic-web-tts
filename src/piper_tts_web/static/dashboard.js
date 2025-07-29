@@ -7,6 +7,7 @@ let totalPages = 1;
 let currentSearch = '';
 let currentVoiceFilter = '';
 let currentUserFilter = '';
+let currentDurationFilter = '';
 
 let firebaseApp = null;
 let firebaseAuth = null;
@@ -65,6 +66,7 @@ async function loadDashboardList(page = 1) {
     if (currentSearch) params.append('search', currentSearch);
     if (currentVoiceFilter) params.append('voice', currentVoiceFilter);
     if (currentUserFilter) params.append('user_email', currentUserFilter);
+    if (currentDurationFilter) params.append('duration', currentDurationFilter);
     
     const res = await fetch(`/dashboard-recordings?${params.toString()}`, {
       headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
@@ -234,6 +236,7 @@ async function loadVoicesForFilter() {
 function setupSearchHandlers() {
   const searchInput = document.getElementById('search-input');
   const voiceFilter = document.getElementById('voice-filter');
+  const durationFilter = document.getElementById('duration-filter');
   const userFilter = document.getElementById('user-filter');
   const searchBtn = document.getElementById('search-btn');
   const clearBtn = document.getElementById('clear-btn');
@@ -241,6 +244,7 @@ function setupSearchHandlers() {
   function performSearch() {
     currentSearch = searchInput.value.trim();
     currentVoiceFilter = voiceFilter.value.trim();
+    currentDurationFilter = durationFilter.value.trim();
     currentUserFilter = userFilter.value.trim();
     currentPage = 1;
     loadDashboardList(1);
@@ -249,9 +253,11 @@ function setupSearchHandlers() {
   function clearSearch() {
     searchInput.value = '';
     voiceFilter.value = '';
+    durationFilter.value = '';
     userFilter.value = '';
     currentSearch = '';
     currentVoiceFilter = '';
+    currentDurationFilter = '';
     currentUserFilter = '';
     currentPage = 1;
     loadDashboardList(1);
@@ -260,8 +266,9 @@ function setupSearchHandlers() {
   searchBtn.addEventListener('click', performSearch);
   clearBtn.addEventListener('click', clearSearch);
   
-  // Change event for dropdown
+  // Change events for dropdowns
   voiceFilter.addEventListener('change', performSearch);
+  durationFilter.addEventListener('change', performSearch);
   
   // Enter key support
   [searchInput, userFilter].forEach(input => {
