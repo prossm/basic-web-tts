@@ -542,8 +542,9 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
             
             # First try: new piper1-gpl CLI format with -m and -f
             try:
+                # Use the Python module format as documented
                 cmd = [
-                    piper_path,
+                    "python3", "-m", "piper",
                     "-m", str(model_path),
                     "-f", str(output_file),
                     "--", request.text
@@ -564,7 +565,32 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
             except Exception as e:
                 logger.warning(f"Exception with new format: {e}")
             
-            # Second try: legacy format with --model and stdin
+            # Second try: Direct binary approach (in case pip installed a binary)
+            if not success:
+                try:
+                    cmd = [
+                        piper_path,
+                        "-m", str(model_path),
+                        "-f", str(output_file),
+                        "--", request.text
+                    ]
+                    logger.info(f"Trying direct binary format: {' '.join(cmd)}")
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                    )
+                    stdout, stderr = process.communicate()
+                    if process.returncode == 0 and output_file.exists():
+                        success = True
+                        logger.info("Direct binary format succeeded")
+                    else:
+                        logger.warning(f"Direct binary format failed - return code: {process.returncode}, file exists: {output_file.exists()}, stderr: {stderr}")
+                except Exception as e:
+                    logger.warning(f"Exception with direct binary format: {e}")
+            
+            # Third try: legacy format with --model and stdin (fallback only)
             if not success:
                 try:
                     cmd = [
@@ -589,31 +615,6 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                         logger.warning(f"Legacy format failed - return code: {process.returncode}, file exists: {output_file.exists()}, stderr: {stderr}")
                 except Exception as e:
                     logger.warning(f"Exception with legacy format: {e}")
-            
-            # Third try: Python module approach
-            if not success:
-                try:
-                    cmd = [
-                        "python3", "-m", "piper",
-                        "-m", str(model_path),
-                        "-f", str(output_file),
-                        "--", request.text
-                    ]
-                    logger.info(f"Trying Python module format: {' '.join(cmd)}")
-                    process = subprocess.Popen(
-                        cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                    )
-                    stdout, stderr = process.communicate()
-                    if process.returncode == 0 and output_file.exists():
-                        success = True
-                        logger.info("Python module format succeeded")
-                    else:
-                        logger.warning(f"Python module format failed - return code: {process.returncode}, file exists: {output_file.exists()}, stderr: {stderr}")
-                except Exception as e:
-                    logger.warning(f"Exception with Python module format: {e}")
             
             if not success:
                 logger.error(f"All piper formats failed. Last error: {stderr}")
