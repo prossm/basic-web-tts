@@ -200,6 +200,37 @@ function updatePaginationControls() {
   };
 }
 
+async function loadVoicesForFilter() {
+  try {
+    const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+    const res = await fetch('/dashboard-voices', {
+      headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const voiceSelect = document.getElementById('voice-filter');
+      
+      // Clear existing options except "All voices"
+      voiceSelect.innerHTML = '<option value="">All voices</option>';
+      
+      // Add voice options
+      data.voices.forEach(voice => {
+        const option = document.createElement('option');
+        option.value = voice;
+        // Format display name for better readability
+        const displayName = voice
+          .replace(/_/g, ' ')
+          .replace(/-/g, ' - ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+        option.textContent = displayName;
+        voiceSelect.appendChild(option);
+      });
+    }
+  } catch (err) {
+    console.error('Failed to load voices for filter:', err);
+  }
+}
+
 function setupSearchHandlers() {
   const searchInput = document.getElementById('search-input');
   const voiceFilter = document.getElementById('voice-filter');
@@ -229,8 +260,11 @@ function setupSearchHandlers() {
   searchBtn.addEventListener('click', performSearch);
   clearBtn.addEventListener('click', clearSearch);
   
+  // Change event for dropdown
+  voiceFilter.addEventListener('change', performSearch);
+  
   // Enter key support
-  [searchInput, voiceFilter, userFilter].forEach(input => {
+  [searchInput, userFilter].forEach(input => {
     input.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         performSearch();
@@ -244,6 +278,7 @@ function setupSearchHandlers() {
   firebaseAuth.onAuthStateChanged(user => {
     if (user) {
       setupSearchHandlers();
+      loadVoicesForFilter();
       loadDashboardList();
     } else {
       dashboardList.innerHTML = '<li>Please log in as a superuser to view the dashboard.</li>';

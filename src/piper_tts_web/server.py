@@ -278,6 +278,46 @@ async def dashboard_recordings(
         }
     }
 
+@app.get("/dashboard-voices")
+async def get_dashboard_voices(authorization: Optional[str] = Header(None)):
+    if not db:
+        raise HTTPException(status_code=500, detail="Firestore not available")
+    # Authenticate and check superuser
+    uid = None
+    if authorization and authorization.startswith("Bearer "):
+        id_token = authorization.split(" ", 1)[1]
+        try:
+            decoded = firebase_admin.auth.verify_id_token(id_token)
+            uid = decoded["uid"]
+        except Exception:
+            uid = None
+    if not uid:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    user_doc = db.collection("users").document(uid).get()
+    if not user_doc.exists or not user_doc.to_dict().get("superuser"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    voices = set()
+    
+    # Get voices from user recordings
+    for user in db.collection("users").stream():
+        for rec in db.collection("users").document(user.id).collection("recordings").stream():
+            rec_data = rec.to_dict()
+            voice = rec_data.get("voice")
+            if voice:
+                voices.add(voice)
+    
+    # Get voices from anonymous recordings
+    for rec in db.collection("recordings").stream():
+        rec_data = rec.to_dict()
+        voice = rec_data.get("voice")
+        if voice:
+            voices.add(voice)
+    
+    # Convert to sorted list
+    sorted_voices = sorted(list(voices))
+    return {"voices": sorted_voices}
+
 @app.get("/user-info")
 async def get_user_info(authorization: Optional[str] = Header(None)):
     if not db:
