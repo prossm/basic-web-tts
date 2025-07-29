@@ -2,7 +2,7 @@
 
 See it live!: [BasicTTS.com](https://basictts.com)
 
-This is a simple web interface for [Piper Text-to-Speech](https://github.com/rhasspy/piper) that provides a user-friendly way to convert text to speech using various voice models.
+This is a simple web interface for [Piper Text-to-Speech](https://github.com/OHF-Voice/piper1-gpl) that provides a user-friendly way to convert text to speech using various voice models.
 
 This repo was almost entirely vibe-coded in [Cursor](https://www.cursor.com/).
 
@@ -27,14 +27,8 @@ This repo was almost entirely vibe-coded in [Cursor](https://www.cursor.com/).
    # Initialize Git LFS
    git lfs install
    
-   # Clone and build Piper
-   git clone https://github.com/rhasspy/piper.git
-   cd piper
-   mkdir build
-   cd build
-   cmake -DCMAKE_BUILD_TYPE=Release ..
-   cmake --build . --config Release
-   cd ../..
+   # Install Piper (much simpler now!)
+   pip install piper-tts
    ```
 
    **For Linux:**
@@ -46,14 +40,8 @@ This repo was almost entirely vibe-coded in [Cursor](https://www.cursor.com/).
    # Initialize Git LFS
    git lfs install
    
-   # For Linux, you'll need to build piper from source
-   git clone https://github.com/rhasspy/piper.git
-   cd piper
-   mkdir build
-   cd build
-   cmake -DCMAKE_BUILD_TYPE=Release ..
-   cmake --build . --config Release
-   cd ../..
+   # Install Piper (much simpler now!)
+   pip install piper-tts
    ```
 
    **For Windows:**
@@ -64,6 +52,9 @@ This repo was almost entirely vibe-coded in [Cursor](https://www.cursor.com/).
    
    # Initialize Git LFS
    git lfs install
+   
+   # Install Piper
+   pip install piper-tts
    ```
 
 2. Install the web interface package:

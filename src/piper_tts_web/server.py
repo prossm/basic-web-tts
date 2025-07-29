@@ -376,28 +376,41 @@ class SynthesisRequest(BaseModel):
 
 def find_piper_executable():
     """Find the piper executable in common installation locations."""
-    # Check common locations
+    # Check common locations (prioritizing pip install locations)
     possible_paths = [
+        # First check for pip-installed piper-tts (piper1-gpl)
+        "piper",  # Should be in PATH if installed via pip
+        os.path.join(os.path.expanduser("~"), ".local", "bin", "piper"),  # User pip install
         os.path.join(os.path.expanduser("~"), "bin", "piper"),  # User's bin directory
         "/usr/local/bin/piper",  # System-wide installation
         "/opt/homebrew/bin/piper",  # Homebrew on Apple Silicon
         "/usr/bin/piper",  # System bin
-        "/app/piper",
+        "/app/piper",  # Docker/container installs
+        # Legacy: old build-from-source location
         os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             "piper",
             "build",
             "piper",
-        ),  # Local build
+        ),  # Local build (legacy)
     ]
 
     for path in possible_paths:
-        if os.path.isfile(path) and os.access(path, os.X_OK):
-            return path
+        # Handle "piper" (PATH lookup) differently
+        if path == "piper":
+            # Use shutil.which to check if piper is in PATH
+            import shutil
+            piper_in_path = shutil.which("piper")
+            if piper_in_path:
+                return piper_in_path
+        else:
+            # Check specific file paths
+            if os.path.isfile(path) and os.access(path, os.X_OK):
+                return path
 
     raise FileNotFoundError(
-        "Could not find piper executable. Please make sure it's installed and in your PATH. "
-        "You can install it by following the instructions in the README.md file."
+        "Could not find piper executable. Please install it with 'pip install piper-tts' "
+        "or follow the instructions in the README.md file."
     )
 
 
@@ -523,27 +536,88 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
             output_file = temp_dir_path / filename
             piper_path = find_piper_executable()
             logger.info(f"Using piper executable: {piper_path}")
-            cmd = [
-                piper_path,
-                "--model",
-                str(model_path),
-                "--output_file",
-                str(output_file),
-                "--espeak-data",
-                "/usr/share/espeak-ng-data",
-            ]
-            logger.info(f"Running command: {' '.join(cmd)}")
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            stdout, stderr = process.communicate(input=request.text)
-            if process.returncode != 0:
-                logger.error(f"Piper failed with error: {stderr}")
-                raise HTTPException(status_code=500, detail=f"Piper failed: {stderr}")
+            
+            # Try to determine the correct piper format
+            success = False
+            
+            # First try: new piper1-gpl CLI format with -m and -f
+            try:
+                cmd = [
+                    piper_path,
+                    "-m", str(model_path),
+                    "-f", str(output_file),
+                    "--", request.text
+                ]
+                logger.info(f"Trying new format: {' '.join(cmd)}")
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                stdout, stderr = process.communicate()
+                if process.returncode == 0:
+                    success = True
+                    logger.info("New piper1-gpl format succeeded")
+                else:
+                    logger.warning(f"New format failed: {stderr}")
+            except Exception as e:
+                logger.warning(f"Exception with new format: {e}")
+            
+            # Second try: legacy format with --model and stdin
+            if not success:
+                try:
+                    cmd = [
+                        piper_path,
+                        "--model", str(model_path),
+                        "--output_file", str(output_file),
+                        "--espeak-data", "/usr/share/espeak-ng-data",
+                    ]
+                    logger.info(f"Trying legacy format: {' '.join(cmd)}")
+                    process = subprocess.Popen(
+                        cmd,
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                    )
+                    stdout, stderr = process.communicate(input=request.text)
+                    if process.returncode == 0:
+                        success = True
+                        logger.info("Legacy format succeeded")
+                    else:
+                        logger.warning(f"Legacy format failed: {stderr}")
+                except Exception as e:
+                    logger.warning(f"Exception with legacy format: {e}")
+            
+            # Third try: Python module approach
+            if not success:
+                try:
+                    cmd = [
+                        "python3", "-m", "piper",
+                        "-m", str(model_path),
+                        "-f", str(output_file),
+                        "--", request.text
+                    ]
+                    logger.info(f"Trying Python module format: {' '.join(cmd)}")
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                    )
+                    stdout, stderr = process.communicate()
+                    if process.returncode == 0:
+                        success = True
+                        logger.info("Python module format succeeded")
+                    else:
+                        logger.warning(f"Python module format failed: {stderr}")
+                except Exception as e:
+                    logger.warning(f"Exception with Python module format: {e}")
+            
+            if not success:
+                logger.error(f"All piper formats failed. Last error: {stderr}")
+                raise HTTPException(status_code=500, detail=f"Piper synthesis failed with all formats tried")
             if not output_file.exists():
                 logger.error(f"Output file not found: {output_file}")
                 raise HTTPException(status_code=500, detail="Failed to generate audio file")
