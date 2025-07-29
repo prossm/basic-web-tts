@@ -556,11 +556,11 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                     text=True,
                 )
                 stdout, stderr = process.communicate()
-                if process.returncode == 0:
+                if process.returncode == 0 and output_file.exists():
                     success = True
                     logger.info("New piper1-gpl format succeeded")
                 else:
-                    logger.warning(f"New format failed: {stderr}")
+                    logger.warning(f"New format failed - return code: {process.returncode}, file exists: {output_file.exists()}, stderr: {stderr}")
             except Exception as e:
                 logger.warning(f"Exception with new format: {e}")
             
@@ -582,11 +582,11 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                         text=True,
                     )
                     stdout, stderr = process.communicate(input=request.text)
-                    if process.returncode == 0:
+                    if process.returncode == 0 and output_file.exists():
                         success = True
                         logger.info("Legacy format succeeded")
                     else:
-                        logger.warning(f"Legacy format failed: {stderr}")
+                        logger.warning(f"Legacy format failed - return code: {process.returncode}, file exists: {output_file.exists()}, stderr: {stderr}")
                 except Exception as e:
                     logger.warning(f"Exception with legacy format: {e}")
             
@@ -607,11 +607,11 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                         text=True,
                     )
                     stdout, stderr = process.communicate()
-                    if process.returncode == 0:
+                    if process.returncode == 0 and output_file.exists():
                         success = True
                         logger.info("Python module format succeeded")
                     else:
-                        logger.warning(f"Python module format failed: {stderr}")
+                        logger.warning(f"Python module format failed - return code: {process.returncode}, file exists: {output_file.exists()}, stderr: {stderr}")
                 except Exception as e:
                     logger.warning(f"Exception with Python module format: {e}")
             
