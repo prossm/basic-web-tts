@@ -153,12 +153,13 @@ label {
     -webkit-backdrop-filter: blur(10px);
     transition: all 0.3s ease;
     color: var(--text-primary);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .form-control:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 0 4px rgba(99, 102, 241, 0.1);
     transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.95);
 }
@@ -250,21 +251,21 @@ textarea.form-control {
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     flex-wrap: wrap;
 }
 
 /* Input Section */
 .input-section {
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Audio Section */
 .audio-section {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
 }
 
 audio {
@@ -277,7 +278,7 @@ audio {
 
 /* Progress Bar */
 .progress-container {
-    margin: 1rem 0 0.5rem 0;
+    margin: 0.25rem 0 0.5rem 0;
 }
 
 .progress-bar {
