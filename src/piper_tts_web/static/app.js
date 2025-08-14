@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!audioUrl) {
                 throw new Error('No audio URL returned from server.');
             }
+            
             // Complete progress bar animation
             clearInterval(progressInterval);
             progressFill.style.width = '100%';
@@ -171,6 +172,8 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 progressContainer.style.display = 'none';
             }, 1000);
+            
+            // Show audio player
             audioPlayer.src = audioUrl;
             audioPlayer.style.display = 'block';
             statusMessage.textContent = '';
@@ -178,6 +181,20 @@ document.addEventListener('DOMContentLoaded', function() {
             // Refresh usage display after successful generation
             if (firebaseAuth && firebaseAuth.currentUser) {
                 initializeUsageDisplay();
+            }
+            
+            // Check if we should show paywall after generation
+            if (data.show_paywall) {
+                console.log('Showing post-generation paywall');
+                // Wait a moment for user to see the audio was generated
+                setTimeout(() => {
+                    const paywallData = {
+                        error: 'usage_limit_exceeded',
+                        message: data.message || "You've now reached your free usage limit. Upgrade to continue creating more audio.",
+                        usage: data.usage
+                    };
+                    showPaywall(paywallData);
+                }, 2000); // 2 second delay to let user see the audio was created
             }
         } catch (error) {
             console.error('Error converting text to speech:', error);
@@ -787,6 +804,12 @@ function showPaywall(errorDetails) {
     const usedMinutes = Math.round((usage.used_duration || 0) / 60);
     const freeMinutes = Math.round((15 * 60) / 60); // 15 minutes
 
+    // Determine the message based on whether they're over or at the limit
+    const isOverLimit = usedMinutes >= freeMinutes;
+    const primaryMessage = isOverLimit 
+        ? `🎉 Your audio was created successfully! You've now used <strong>${usedMinutes} minutes</strong> of your <strong>${freeMinutes} minutes</strong> of free audio generation.`
+        : `You've used <strong>${usedMinutes} minutes</strong> of your <strong>${freeMinutes} minutes</strong> of free audio generation.`;
+
     modal.innerHTML = `
         <div style="
             background: white;
@@ -799,7 +822,7 @@ function showPaywall(errorDetails) {
         ">
             <h2 style="color: #333; margin-bottom: 1em;">🚀 Upgrade to Continue</h2>
             <p style="color: #666; margin-bottom: 1.5em; line-height: 1.5;">
-                You've used <strong>${usedMinutes} minutes</strong> of your <strong>${freeMinutes} minutes</strong> of free audio generation.
+                ${primaryMessage}
             </p>
             <p style="color: #666; margin-bottom: 2em; line-height: 1.5;">
                 Upgrade to unlimited audio generation and support the development of BasicTTS!

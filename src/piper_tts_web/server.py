@@ -691,22 +691,24 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
             except Exception:
                 uid = None
         
-        # Estimate duration and check limits
-        estimated_duration = len(request.text) * 0.1  # Rough estimate
-        can_generate = await check_user_can_generate(uid, estimated_duration)
-        
-        if not can_generate["can_generate"]:
-            error_detail = {
-                "error": "usage_limit_exceeded",
-                "message": "You've reached your free usage limit. Please upgrade to continue.",
-                "reason": can_generate.get("reason"),
-                "usage": can_generate.get("usage", {})
-            }
-            logger.info(f"Raising 402 HTTPException with detail: {error_detail}")
-            raise HTTPException(
-                status_code=402,  # Payment Required
-                detail=error_detail
-            )
+        # Check if user has already exceeded limits (hard stop)
+        current_usage = await get_user_usage(uid or "anonymous")
+        if uid and current_usage["total_duration"] > FREE_DURATION_SECONDS:
+            # User has already exceeded free limit and needs subscription
+            has_subscription = await check_revenuecat_subscription(uid)
+            if not has_subscription:
+                error_detail = {
+                    "error": "usage_limit_exceeded", 
+                    "message": "You've reached your free usage limit. Please upgrade to continue.",
+                    "reason": "limit_exceeded",
+                    "usage": {
+                        "used_duration": current_usage["total_duration"],
+                        "free_duration": FREE_DURATION_SECONDS,
+                        "recordings_count": current_usage["recordings_count"]
+                    }
+                }
+                logger.info(f"User already over limit, raising 402 HTTPException")
+                raise HTTPException(status_code=402, detail=error_detail)
         
         logger.info(f"Synthesize: Downloading model for voice: {request.voice}")
         if not bucket:
@@ -881,9 +883,31 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                         "voiceLower": request.voice.lower()
                     }
                     db.collection("recordings").document(recording_doc["id"]).set(recording_doc)
-            # Return the audio file as a response
+            # Check if this generation puts user over the limit (show paywall after generation)
+            show_paywall = False
+            if uid:
+                updated_usage = await get_user_usage(uid)
+                if updated_usage["total_duration"] > FREE_DURATION_SECONDS:
+                    # User has now exceeded the limit, check if they have subscription
+                    has_subscription = await check_revenuecat_subscription(uid)
+                    if not has_subscription:
+                        show_paywall = True
+                        logger.info(f"User {uid} exceeded limit after this generation, will show paywall")
+            
+            # Return the audio file with optional paywall indicator
+            response_data = {"audioUrl": firebase_url if firebase_url else "/audio/local"}
+            
+            if show_paywall:
+                response_data["show_paywall"] = True
+                response_data["usage"] = {
+                    "used_duration": updated_usage["total_duration"],
+                    "free_duration": FREE_DURATION_SECONDS,
+                    "recordings_count": updated_usage["recordings_count"]
+                }
+                response_data["message"] = "You've now used all your free audio generation. Upgrade to continue creating more audio."
+            
             if firebase_url:
-                return {"audioUrl": firebase_url}
+                return response_data
             else:
                 return FileResponse(output_file, media_type="audio/wav", filename="speech.wav")
     except FileNotFoundError as e:
