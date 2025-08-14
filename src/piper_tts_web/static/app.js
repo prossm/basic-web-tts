@@ -110,16 +110,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     const responseText = await response.text();
                     console.log('Response body:', responseText);
                     
-                    if (response.status === 402) {
-                        // Payment required - show paywall
-                        console.log('402 Payment Required detected - showing paywall');
+                    // Parse the JSON response
+                    const errorData = JSON.parse(responseText);
+                    
+                    // Check for 402 Payment Required (either direct 402 or 500 with 402 detail)
+                    if (response.status === 402 || (response.status === 500 && errorData.detail && errorData.detail.includes('402:'))) {
+                        console.log('Payment Required detected - showing paywall');
                         clearInterval(progressInterval);
                         progressContainer.style.display = 'none';
                         
-                        // Parse the JSON from response text
-                        const errorData = JSON.parse(responseText);
-                        console.log('Parsed error data:', errorData);
-                        showPaywall(errorData.detail);
+                        // Extract usage data from the detail string if it's wrapped in 500
+                        let paymentErrorDetail;
+                        if (response.status === 500 && errorData.detail.includes('402:')) {
+                            // Parse the embedded data from the string
+                            const match = errorData.detail.match(/402: (.+)/);
+                            if (match) {
+                                // Fix the malformed JSON by replacing single quotes with double quotes
+                                const fixedJson = match[1].replace(/'/g, '"');
+                                paymentErrorDetail = JSON.parse(fixedJson);
+                                console.log('Extracted payment error detail:', paymentErrorDetail);
+                            }
+                        } else {
+                            paymentErrorDetail = errorData.detail;
+                        }
+                        
+                        showPaywall(paymentErrorDetail);
                         return;
                     }
                 } catch (parseError) {
