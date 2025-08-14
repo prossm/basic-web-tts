@@ -104,16 +104,28 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             if (!response.ok) {
                 console.log('Response not OK:', response.status, response.statusText);
-                if (response.status === 402) {
-                    // Payment required - show paywall
-                    console.log('402 Payment Required detected - showing paywall');
-                    clearInterval(progressInterval);
-                    progressContainer.style.display = 'none';
-                    const errorData = await response.json();
-                    console.log('Error data:', errorData);
-                    showPaywall(errorData.detail);
-                    return;
+                
+                // Try to get response body for debugging
+                try {
+                    const responseText = await response.text();
+                    console.log('Response body:', responseText);
+                    
+                    if (response.status === 402) {
+                        // Payment required - show paywall
+                        console.log('402 Payment Required detected - showing paywall');
+                        clearInterval(progressInterval);
+                        progressContainer.style.display = 'none';
+                        
+                        // Parse the JSON from response text
+                        const errorData = JSON.parse(responseText);
+                        console.log('Parsed error data:', errorData);
+                        showPaywall(errorData.detail);
+                        return;
+                    }
+                } catch (parseError) {
+                    console.error('Error parsing response:', parseError);
                 }
+                
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();

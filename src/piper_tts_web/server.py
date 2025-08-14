@@ -696,14 +696,16 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
         can_generate = await check_user_can_generate(uid, estimated_duration)
         
         if not can_generate["can_generate"]:
+            error_detail = {
+                "error": "usage_limit_exceeded",
+                "message": "You've reached your free usage limit. Please upgrade to continue.",
+                "reason": can_generate.get("reason"),
+                "usage": can_generate.get("usage", {})
+            }
+            logger.info(f"Raising 402 HTTPException with detail: {error_detail}")
             raise HTTPException(
                 status_code=402,  # Payment Required
-                detail={
-                    "error": "usage_limit_exceeded",
-                    "message": "You've reached your free usage limit. Please upgrade to continue.",
-                    "reason": can_generate.get("reason"),
-                    "usage": can_generate.get("usage", {})
-                }
+                detail=error_detail
             )
         
         logger.info(f"Synthesize: Downloading model for voice: {request.voice}")
