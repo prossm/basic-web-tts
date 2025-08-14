@@ -917,18 +917,19 @@ async function initRevenueCatPurchase() {
     console.log('Configuring RevenueCat with API key:', revenueCatApiKey);
     
     try {
+        // Get user ID or use anonymous
+        const appUserId = (firebaseAuth && firebaseAuth.currentUser) 
+            ? firebaseAuth.currentUser.uid 
+            : null; // null for anonymous users
+        
+        console.log('Using app user ID:', appUserId || 'anonymous');
+        
         // Initialize RevenueCat (using unpkg format)
         await window.Purchases.Purchases.configure({
             apiKey: revenueCatApiKey,
+            appUserId: appUserId, // This is required
         });
         console.log('RevenueCat configured successfully');
-        
-        // Set up user identification if logged in
-        if (firebaseAuth && firebaseAuth.currentUser) {
-            console.log('Logging in user to RevenueCat:', firebaseAuth.currentUser.uid);
-            await window.Purchases.Purchases.logIn(firebaseAuth.currentUser.uid);
-            console.log('User logged in to RevenueCat');
-        }
         
         setupActualPurchaseFlow();
         console.log('RevenueCat purchase flow set up');
