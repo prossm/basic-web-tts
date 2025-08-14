@@ -126,24 +126,40 @@ document.addEventListener('DOMContentLoaded', function() {
                             const match = errorData.detail.match(/402: (.+)/);
                             if (match) {
                                 try {
+                                    // The server response has the usage data in the error detail
+                                    console.log('Raw match from server:', match[1]);
+                                    
                                     // Fix the malformed JSON by replacing single quotes with double quotes
-                                    // and handling escaped quotes properly
-                                    let fixedJson = match[1]
-                                        .replace(/'/g, '"')           // Replace single quotes with double quotes
-                                        .replace(/\\"/g, '\\"')       // Keep escaped double quotes
-                                        .replace(/\\"([^"]*)\\""/g, '"$1"'); // Fix double-escaped quotes
+                                    let fixedJson = match[1];
+                                    
+                                    // More robust JSON fixing
+                                    fixedJson = fixedJson
+                                        .replace(/'/g, '"')                    // Replace single quotes
+                                        .replace(/\\"/g, "'")                  // Temporarily replace escaped quotes
+                                        .replace(/([a-zA-Z_][a-zA-Z0-9_]*): /g, '"$1": ')  // Add quotes to keys
+                                        .replace(/'/g, '"');                   // Convert back to double quotes
                                     
                                     console.log('Attempting to parse:', fixedJson);
                                     paymentErrorDetail = JSON.parse(fixedJson);
-                                    console.log('Extracted payment error detail:', paymentErrorDetail);
+                                    console.log('Successfully parsed payment error detail:', paymentErrorDetail);
                                 } catch (innerParseError) {
                                     console.error('Failed to parse embedded JSON, using fallback:', innerParseError);
-                                    // Fallback: create a basic error object
+                                    console.log('Original text that failed:', match[1]);
+                                    
+                                    // Extract numbers manually as fallback
+                                    const usedMatch = match[1].match(/used_duration['":\s]*([0-9.]+)/);
+                                    const countMatch = match[1].match(/recordings_count['":\s]*([0-9]+)/);
+                                    
                                     paymentErrorDetail = {
                                         error: 'usage_limit_exceeded',
                                         message: "You've reached your free usage limit. Please upgrade to continue.",
-                                        usage: { used_duration: 419, free_duration: 900, recordings_count: 25 }
+                                        usage: { 
+                                            used_duration: usedMatch ? parseFloat(usedMatch[1]) : 900,
+                                            free_duration: 900,
+                                            recordings_count: countMatch ? parseInt(countMatch[1]) : 20
+                                        }
                                     };
+                                    console.log('Fallback payment error detail:', paymentErrorDetail);
                                 }
                             }
                         } else {
@@ -897,7 +913,10 @@ async function initRevenueCatPurchase() {
     console.log('Configuring RevenueCat with API key:', revenueCatApiKey);
     
     try {
-        await window.Purchases.configure(revenueCatApiKey);
+        // Initialize RevenueCat
+        await window.Purchases.configure({
+            apiKey: revenueCatApiKey,
+        });
         console.log('RevenueCat configured successfully');
         
         // Set up user identification if logged in
@@ -919,7 +938,7 @@ async function loadRevenueCatSDK() {
     console.log('Loading RevenueCat SDK...');
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = 'https://sdk.revenuecat.com/js/latest/index.js';
+        script.src = 'https://cdn.jsdelivr.net/npm/@revenuecat/purchases-js@3.0.0/dist/purchases.min.js';
         script.onload = () => {
             console.log('RevenueCat SDK script loaded');
             resolve();
@@ -944,11 +963,29 @@ function setupActualPurchaseFlow() {
                 
                 // Get available offerings
                 const offerings = await window.Purchases.getOfferings();
-                const premiumOffering = offerings.all['premium_monthly'];
+                console.log('Available offerings:', offerings);
                 
-                if (premiumOffering && premiumOffering.monthly) {
-                    // Purchase the monthly package
-                    const purchaseResult = await window.Purchases.purchasePackage(premiumOffering.monthly);
+                let packageToPurchase = null;
+                
+                // Try to find the premium_monthly offering
+                if (offerings.all && offerings.all['premium_monthly']) {
+                    const premiumOffering = offerings.all['premium_monthly'];
+                    packageToPurchase = premiumOffering.monthly;
+                } 
+                // Fallback to current offering
+                else if (offerings.current && offerings.current.monthly) {
+                    packageToPurchase = offerings.current.monthly;
+                }
+                // Last resort - any available package
+                else if (offerings.current && offerings.current.availablePackages.length > 0) {
+                    packageToPurchase = offerings.current.availablePackages[0];
+                }
+                
+                if (packageToPurchase) {
+                    console.log('Purchasing package:', packageToPurchase);
+                    // Purchase the package
+                    const purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
+                    console.log('Purchase result:', purchaseResult);
                     
                     if (purchaseResult.customerInfo.entitlements.active['premium']) {
                         // Purchase successful
@@ -970,7 +1007,7 @@ function setupActualPurchaseFlow() {
                         throw new Error('Purchase completed but entitlement not found');
                     }
                 } else {
-                    throw new Error('No monthly offering available');
+                    throw new Error('No packages available for purchase');
                 }
             } catch (error) {
                 console.error('Purchase failed:', error);
