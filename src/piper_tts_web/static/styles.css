@@ -20,7 +20,7 @@
     --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
     
     /* Backgrounds */
-    --background-primary: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%, #f1f5f9 100%);
+    --background-primary: linear-gradient(135deg, #fef3c7 0%, #fde68a 20%, #fed7aa 40%, #fecaca 60%, #e9d5ff 80%, #c7d2fe 100%);
     --background-secondary: #f8fafc;
     --background-card: rgba(255, 255, 255, 0.95);
     
@@ -88,7 +88,7 @@ header nav a:hover {
 .container {
     max-width: 900px;
     margin: 2rem auto;
-    padding: 2rem;
+    padding: 0 2rem;
     background: var(--background-card);
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-xl);
