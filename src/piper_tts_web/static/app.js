@@ -186,6 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if we should show paywall after generation
             if (data.show_paywall) {
                 console.log('Showing post-generation paywall');
+                console.log('Usage data from server:', data.usage);
                 // Wait a moment for user to see the audio was generated
                 setTimeout(() => {
                     const paywallData = {
@@ -193,6 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         message: data.message || "You've now reached your free usage limit. Upgrade to continue creating more audio.",
                         usage: data.usage
                     };
+                    console.log('Paywall data being passed:', paywallData);
                     showPaywall(paywallData);
                 }, 2000); // 2 second delay to let user see the audio was created
             }
@@ -779,6 +781,8 @@ async function checkSuperuserAndShowDashboardLink(user) {
 
 // RevenueCat and Paywall functionality
 function showPaywall(errorDetails) {
+    console.log('showPaywall called with:', errorDetails);
+    
     // Remove any existing paywall
     const existingPaywall = document.getElementById('paywall-modal');
     if (existingPaywall) {
@@ -801,8 +805,10 @@ function showPaywall(errorDetails) {
     `;
 
     const usage = errorDetails.usage || {};
+    console.log('Usage object in showPaywall:', usage);
     const usedMinutes = Math.round((usage.used_duration || 0) / 60);
     const freeMinutes = Math.round((15 * 60) / 60); // 15 minutes
+    console.log('Calculated minutes - used:', usedMinutes, 'free:', freeMinutes);
 
     // Determine the message based on whether they're over or at the limit
     const isOverLimit = usedMinutes >= freeMinutes;
@@ -868,30 +874,41 @@ function showPaywall(errorDetails) {
 }
 
 async function initRevenueCatPurchase() {
+    console.log('initRevenueCatPurchase called');
+    
     // Load RevenueCat Web SDK
     if (!window.Purchases) {
+        console.log('RevenueCat SDK not loaded, attempting to load...');
         try {
             await loadRevenueCatSDK();
+            console.log('RevenueCat SDK loaded successfully');
         } catch (error) {
             console.error('Failed to load RevenueCat SDK:', error);
             // Fallback to placeholder functionality
             setupPlaceholderPurchase();
             return;
         }
+    } else {
+        console.log('RevenueCat SDK already loaded');
     }
     
     // Initialize RevenueCat with your public API key
     const revenueCatApiKey = 'rcb_QKFmTOiOnWADwtcAadurQldsNlNN';
+    console.log('Configuring RevenueCat with API key:', revenueCatApiKey);
     
     try {
         await window.Purchases.configure(revenueCatApiKey);
+        console.log('RevenueCat configured successfully');
         
         // Set up user identification if logged in
         if (firebaseAuth && firebaseAuth.currentUser) {
+            console.log('Logging in user to RevenueCat:', firebaseAuth.currentUser.uid);
             await window.Purchases.logIn(firebaseAuth.currentUser.uid);
+            console.log('User logged in to RevenueCat');
         }
         
         setupActualPurchaseFlow();
+        console.log('RevenueCat purchase flow set up');
     } catch (error) {
         console.error('Failed to configure RevenueCat:', error);
         setupPlaceholderPurchase();
@@ -899,16 +916,24 @@ async function initRevenueCatPurchase() {
 }
 
 async function loadRevenueCatSDK() {
+    console.log('Loading RevenueCat SDK...');
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://sdk.revenuecat.com/js/latest/index.js';
-        script.onload = resolve;
-        script.onerror = reject;
+        script.onload = () => {
+            console.log('RevenueCat SDK script loaded');
+            resolve();
+        };
+        script.onerror = (error) => {
+            console.error('RevenueCat SDK script failed to load:', error);
+            reject(error);
+        };
         document.head.appendChild(script);
     });
 }
 
 function setupActualPurchaseFlow() {
+    console.log('Setting up actual RevenueCat purchase flow');
     const purchaseButton = document.getElementById('rc-purchase-button');
     if (purchaseButton) {
         purchaseButton.onclick = async () => {
@@ -966,6 +991,7 @@ function setupActualPurchaseFlow() {
 }
 
 function setupPlaceholderPurchase() {
+    console.log('Setting up placeholder purchase flow (RevenueCat failed to load)');
     const purchaseButton = document.getElementById('rc-purchase-button');
     if (purchaseButton) {
         purchaseButton.onclick = () => {
