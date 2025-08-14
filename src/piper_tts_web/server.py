@@ -18,6 +18,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth, storage
 import base64
 from typing import Optional
+import httpx
 
 app = FastAPI()
 
@@ -84,6 +85,14 @@ else:
 
 # Set the Firebase Storage models path
 FIREBASE_MODELS_PATH = "models/"
+
+# RevenueCat configuration
+REVENUECAT_API_KEY = os.getenv("REVENUECAT_API_KEY")
+REVENUECAT_BASE_URL = "https://api.revenuecat.com/v1"
+
+# Usage limits
+FREE_FIRST_FILE = True  # First file is always free
+FREE_DURATION_SECONDS = 15 * 60  # 15 minutes of additional free audio
 
 # Endpoint to serve Firebase config to frontend
 @app.get("/firebase-config")
@@ -349,6 +358,61 @@ async def get_dashboard_voices(authorization: Optional[str] = Header(None)):
     sorted_voices = sorted(list(voices))
     return {"voices": sorted_voices}
 
+@app.get("/user-usage")
+async def get_user_usage_endpoint(authorization: Optional[str] = Header(None)):
+    """Get user's current usage statistics"""
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not available")
+    
+    uid = None
+    if authorization and authorization.startswith("Bearer "):
+        id_token = authorization.split(" ", 1)[1]
+        try:
+            decoded = firebase_admin.auth.verify_id_token(id_token)
+            uid = decoded["uid"]
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    
+    if not uid:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    usage = await get_user_usage(uid)
+    can_generate = await check_user_can_generate(uid)
+    
+    return {
+        "usage": usage,
+        "limits": {
+            "free_duration": FREE_DURATION_SECONDS,
+            "first_file_free": FREE_FIRST_FILE
+        },
+        "can_generate": can_generate
+    }
+
+@app.post("/check-generation-limits")
+async def check_generation_limits(
+    request: dict,
+    authorization: Optional[str] = Header(None)
+):
+    """Check if user can generate audio with estimated duration"""
+    uid = None
+    if authorization and authorization.startswith("Bearer "):
+        id_token = authorization.split(" ", 1)[1]
+        try:
+            decoded = firebase_admin.auth.verify_id_token(id_token)
+            uid = decoded["uid"]
+        except Exception:
+            return {"can_generate": False, "reason": "invalid_token"}
+    
+    if not uid:
+        return {"can_generate": False, "reason": "login_required"}
+    
+    # Estimate duration based on text length (rough approximation)
+    text = request.get("text", "")
+    estimated_duration = len(text) * 0.1  # Rough estimate: 0.1 seconds per character
+    
+    result = await check_user_can_generate(uid, estimated_duration)
+    return result
+
 @app.get("/user-info")
 async def get_user_info(authorization: Optional[str] = Header(None)):
     if not db:
@@ -372,6 +436,109 @@ async def get_user_info(authorization: Optional[str] = Header(None)):
 class SynthesisRequest(BaseModel):
     text: str
     voice: str
+
+async def get_user_usage(uid: str) -> dict:
+    """Get user's audio generation usage"""
+    if not db or not uid:
+        return {"total_duration": 0, "recordings_count": 0}
+    
+    try:
+        recordings_ref = db.collection("users").document(uid).collection("recordings")
+        recordings = recordings_ref.stream()
+        
+        total_duration = 0
+        recordings_count = 0
+        
+        for recording in recordings:
+            data = recording.to_dict()
+            if not data.get("deleted", False):  # Don't count deleted recordings
+                recordings_count += 1
+                duration = data.get("duration", 0)
+                if duration:
+                    total_duration += duration
+        
+        return {
+            "total_duration": total_duration,
+            "recordings_count": recordings_count
+        }
+    except Exception as e:
+        logger.error(f"Error getting user usage: {e}")
+        return {"total_duration": 0, "recordings_count": 0}
+
+async def check_user_can_generate(uid: str, estimated_duration: float = 60) -> dict:
+    """Check if user can generate audio based on usage limits"""
+    if not uid:
+        # Anonymous users get no free usage
+        return {"can_generate": False, "reason": "login_required"}
+    
+    usage = await get_user_usage(uid)
+    recordings_count = usage["recordings_count"]
+    total_duration = usage["total_duration"]
+    
+    # First recording is always free
+    if recordings_count == 0:
+        return {"can_generate": True, "reason": "first_free"}
+    
+    # Check if user has exceeded free duration limit
+    if total_duration + estimated_duration > FREE_DURATION_SECONDS:
+        # Check RevenueCat subscription status
+        has_subscription = await check_revenuecat_subscription(uid)
+        if has_subscription:
+            return {"can_generate": True, "reason": "subscription"}
+        else:
+            return {
+                "can_generate": False, 
+                "reason": "limit_exceeded",
+                "usage": {
+                    "used_duration": total_duration,
+                    "free_duration": FREE_DURATION_SECONDS,
+                    "recordings_count": recordings_count
+                }
+            }
+    
+    # User is within free limits
+    return {"can_generate": True, "reason": "free_usage"}
+
+async def check_revenuecat_subscription(uid: str) -> bool:
+    """Check if user has active subscription via RevenueCat"""
+    if not REVENUECAT_API_KEY:
+        logger.warning("RevenueCat API key not configured")
+        return False
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "Authorization": f"Bearer {REVENUECAT_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            response = await client.get(
+                f"{REVENUECAT_BASE_URL}/subscribers/{uid}",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                subscriber = data.get("subscriber", {})
+                entitlements = subscriber.get("entitlements", {})
+                
+                # Check if user has any active entitlements
+                for entitlement_id, entitlement in entitlements.items():
+                    if entitlement.get("expires_date") is None:  # Lifetime subscription
+                        return True
+                    # Check if subscription is still active
+                    expires_date = entitlement.get("expires_date")
+                    if expires_date and expires_date > time.time() * 1000:  # RevenueCat uses milliseconds
+                        return True
+                
+                return False
+            else:
+                logger.warning(f"RevenueCat API error: {response.status_code}")
+                return False
+                
+    except Exception as e:
+        logger.error(f"Error checking RevenueCat subscription: {e}")
+        return False
 
 
 def find_piper_executable():
@@ -508,6 +675,31 @@ async def list_voices():
 async def synthesize_speech(request: SynthesisRequest, req: Request, authorization: Optional[str] = Header(None)):
     """Synthesize speech from text using the specified voice. Download model from Firebase Storage."""
     try:
+        # Check user authorization and limits first
+        uid = None
+        if authorization and authorization.startswith("Bearer "):
+            id_token = authorization.split(" ", 1)[1]
+            try:
+                decoded = firebase_admin.auth.verify_id_token(id_token)
+                uid = decoded["uid"]
+            except Exception:
+                uid = None
+        
+        # Estimate duration and check limits
+        estimated_duration = len(request.text) * 0.1  # Rough estimate
+        can_generate = await check_user_can_generate(uid, estimated_duration)
+        
+        if not can_generate["can_generate"]:
+            raise HTTPException(
+                status_code=402,  # Payment Required
+                detail={
+                    "error": "usage_limit_exceeded",
+                    "message": "You've reached your free usage limit. Please upgrade to continue.",
+                    "reason": can_generate.get("reason"),
+                    "usage": can_generate.get("usage", {})
+                }
+            )
+        
         logger.info(f"Synthesize: Downloading model for voice: {request.voice}")
         if not bucket:
             raise HTTPException(status_code=500, detail="Firebase Storage not available")
@@ -637,14 +829,6 @@ async def synthesize_speech(request: SynthesisRequest, req: Request, authorizati
                     logger.error(f"Failed to upload to Firebase Storage: {e}")
                     firebase_url = None
                     storage_path = None
-            uid = None
-            if authorization and authorization.startswith("Bearer "):
-                id_token = authorization.split(" ", 1)[1]
-                try:
-                    decoded = firebase_admin.auth.verify_id_token(id_token)
-                    uid = decoded["uid"]
-                except Exception:
-                    uid = None
             logger.info(f"uid: {uid}")
             # Calculate audio duration
             duration = None

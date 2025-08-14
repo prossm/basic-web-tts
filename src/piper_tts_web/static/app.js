@@ -103,6 +103,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             });
             if (!response.ok) {
+                if (response.status === 402) {
+                    // Payment required - show paywall
+                    const errorData = await response.json();
+                    showPaywall(errorData.detail);
+                    return;
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
@@ -120,6 +126,11 @@ document.addEventListener('DOMContentLoaded', function() {
             audioPlayer.src = audioUrl;
             audioPlayer.style.display = 'block';
             statusMessage.textContent = '';
+            
+            // Refresh usage display after successful generation
+            if (firebaseAuth && firebaseAuth.currentUser) {
+                initializeUsageDisplay();
+            }
         } catch (error) {
             console.error('Error converting text to speech:', error);
             statusMessage.textContent = 'Error converting text to speech. Please try again.';
@@ -295,6 +306,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (libraryPage) libraryPage.style.display = 'none';
         // Hide homepage recordings section if present
         if (recordingsSection) recordingsSection.style.display = 'none';
+        
+        // Initialize usage display for logged in users
+        initializeUsageDisplay();
       } else {
         // Show auth links, hide Account
         if (userInfo) userInfo.style.display = 'none';
@@ -696,4 +710,365 @@ async function checkSuperuserAndShowDashboardLink(user) {
   } catch (err) {
     console.error('[checkSuperuserAndShowDashboardLink] Error:', err);
   }
+}
+
+// RevenueCat and Paywall functionality
+function showPaywall(errorDetails) {
+    // Remove any existing paywall
+    const existingPaywall = document.getElementById('paywall-modal');
+    if (existingPaywall) {
+        existingPaywall.remove();
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'paywall-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+
+    const usage = errorDetails.usage || {};
+    const usedMinutes = Math.round((usage.used_duration || 0) / 60);
+    const freeMinutes = Math.round((15 * 60) / 60); // 15 minutes
+
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 2em;
+            border-radius: 12px;
+            max-width: 500px;
+            margin: 2em;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        ">
+            <h2 style="color: #333; margin-bottom: 1em;">🚀 Upgrade to Continue</h2>
+            <p style="color: #666; margin-bottom: 1.5em; line-height: 1.5;">
+                You've used <strong>${usedMinutes} minutes</strong> of your <strong>${freeMinutes} minutes</strong> of free audio generation.
+            </p>
+            <p style="color: #666; margin-bottom: 2em; line-height: 1.5;">
+                Upgrade to unlimited audio generation and support the development of BasicTTS!
+            </p>
+            
+            <div style="margin-bottom: 2em;">
+                <div id="rc-purchase-button" style="
+                    background: #007AFF;
+                    color: white;
+                    padding: 1em 2em;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: inline-block;
+                    font-weight: 500;
+                    margin: 0.5em;
+                ">
+                    Upgrade Now - $4.99/month
+                </div>
+            </div>
+            
+            <button id="close-paywall" style="
+                background: #f0f0f0;
+                border: none;
+                padding: 0.8em 1.5em;
+                border-radius: 6px;
+                cursor: pointer;
+                color: #666;
+            ">
+                Maybe Later
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close button functionality
+    document.getElementById('close-paywall').onclick = () => {
+        modal.remove();
+    };
+
+    // Initialize RevenueCat purchase flow
+    initRevenueCatPurchase();
+}
+
+async function initRevenueCatPurchase() {
+    // Load RevenueCat Web SDK
+    if (!window.Purchases) {
+        try {
+            await loadRevenueCatSDK();
+        } catch (error) {
+            console.error('Failed to load RevenueCat SDK:', error);
+            // Fallback to placeholder functionality
+            setupPlaceholderPurchase();
+            return;
+        }
+    }
+    
+    // Initialize RevenueCat with your public API key
+    const revenueCatApiKey = 'appl_YOUR_PUBLIC_API_KEY_HERE'; // Replace with actual key
+    
+    try {
+        await window.Purchases.configure(revenueCatApiKey);
+        
+        // Set up user identification if logged in
+        if (firebaseAuth && firebaseAuth.currentUser) {
+            await window.Purchases.logIn(firebaseAuth.currentUser.uid);
+        }
+        
+        setupActualPurchaseFlow();
+    } catch (error) {
+        console.error('Failed to configure RevenueCat:', error);
+        setupPlaceholderPurchase();
+    }
+}
+
+async function loadRevenueCatSDK() {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://sdk.revenuecat.com/js/latest/index.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+function setupActualPurchaseFlow() {
+    const purchaseButton = document.getElementById('rc-purchase-button');
+    if (purchaseButton) {
+        purchaseButton.onclick = async () => {
+            try {
+                // Show loading state
+                purchaseButton.textContent = 'Processing...';
+                purchaseButton.style.pointerEvents = 'none';
+                
+                // Get available offerings
+                const offerings = await window.Purchases.getOfferings();
+                const currentOffering = offerings.current;
+                
+                if (currentOffering && currentOffering.monthly) {
+                    // Purchase the monthly package
+                    const purchaseResult = await window.Purchases.purchasePackage(currentOffering.monthly);
+                    
+                    if (purchaseResult.customerInfo.entitlements.active['premium']) {
+                        // Purchase successful
+                        console.log('Purchase successful!');
+                        
+                        // Close paywall modal
+                        const paywallModal = document.getElementById('paywall-modal');
+                        if (paywallModal) {
+                            paywallModal.remove();
+                        }
+                        
+                        // Show success message
+                        showPurchaseSuccess();
+                        
+                        // Refresh user usage status
+                        await checkSubscriptionStatus();
+                        
+                    } else {
+                        throw new Error('Purchase completed but entitlement not found');
+                    }
+                } else {
+                    throw new Error('No monthly offering available');
+                }
+            } catch (error) {
+                console.error('Purchase failed:', error);
+                
+                // Reset button state
+                purchaseButton.textContent = 'Upgrade Now - $4.99/month';
+                purchaseButton.style.pointerEvents = 'auto';
+                
+                // Show error message
+                if (error.userCancelled) {
+                    console.log('User cancelled purchase');
+                } else {
+                    alert('Purchase failed. Please try again.');
+                }
+            }
+        };
+    }
+}
+
+function setupPlaceholderPurchase() {
+    const purchaseButton = document.getElementById('rc-purchase-button');
+    if (purchaseButton) {
+        purchaseButton.onclick = () => {
+            alert('Subscription functionality coming soon! Please check back later.');
+        };
+    }
+}
+
+function showPurchaseSuccess() {
+    // Remove any existing success modal
+    const existingSuccess = document.getElementById('purchase-success-modal');
+    if (existingSuccess) {
+        existingSuccess.remove();
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'purchase-success-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 2001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 2em;
+            border-radius: 12px;
+            max-width: 400px;
+            margin: 2em;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        ">
+            <h2 style="color: #28a745; margin-bottom: 1em;">🎉 Welcome to Premium!</h2>
+            <p style="color: #666; margin-bottom: 2em; line-height: 1.5;">
+                Your subscription is now active. Enjoy unlimited audio generation!
+            </p>
+            
+            <button id="close-success" style="
+                background: #007AFF;
+                color: white;
+                padding: 0.8em 2em;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 500;
+            ">
+                Start Creating Audio
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close button functionality
+    document.getElementById('close-success').onclick = () => {
+        modal.remove();
+    };
+
+    // Auto-close after 5 seconds
+    setTimeout(() => {
+        if (modal.parentNode) {
+            modal.remove();
+        }
+    }, 5000);
+}
+
+async function checkSubscriptionStatus() {
+    // Check user's subscription status and update UI accordingly
+    if (!firebaseAuth || !firebaseAuth.currentUser) {
+        return false;
+    }
+
+    try {
+        const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+        const response = await fetch('/user-usage', {
+            headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.can_generate?.can_generate || false;
+        }
+    } catch (error) {
+        console.error('Error checking subscription status:', error);
+    }
+    
+    return false;
+}
+
+// Show usage info to users
+async function showUsageInfo() {
+    if (!firebaseAuth || !firebaseAuth.currentUser) {
+        return;
+    }
+
+    try {
+        const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+        const response = await fetch('/user-usage', {
+            headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const usage = data.usage;
+            const usedMinutes = Math.round(usage.total_duration / 60);
+            const freeMinutes = Math.round(data.limits.free_duration / 60);
+            
+            console.log(`Usage: ${usedMinutes}/${freeMinutes} minutes used`);
+            
+            // Optionally show this in the UI
+            const statusElement = document.getElementById('usage-status');
+            if (statusElement) {
+                statusElement.textContent = `${usedMinutes}/${freeMinutes} minutes used`;
+            }
+            
+            // Update usage display in header if it exists
+            updateUsageDisplay(data);
+        }
+    } catch (error) {
+        console.error('Error fetching usage info:', error);
+    }
+}
+
+function updateUsageDisplay(usageData) {
+    // Create or update usage display in the header
+    const existingUsage = document.getElementById('usage-display');
+    if (existingUsage) {
+        existingUsage.remove();
+    }
+    
+    if (!firebaseAuth || !firebaseAuth.currentUser) {
+        return; // Don't show usage for anonymous users
+    }
+    
+    const usage = usageData.usage;
+    const usedMinutes = Math.round(usage.total_duration / 60);
+    const freeMinutes = Math.round(usageData.limits.free_duration / 60);
+    const canGenerate = usageData.can_generate?.can_generate;
+    
+    // Find the user info section to add usage display
+    const userInfo = document.getElementById('user-info');
+    if (userInfo && userInfo.style.display !== 'none') {
+        const usageDisplay = document.createElement('span');
+        usageDisplay.id = 'usage-display';
+        usageDisplay.style.cssText = `
+            margin-left: 1em;
+            font-size: 0.9em;
+            color: ${canGenerate ? '#666' : '#d9534f'};
+            font-weight: 500;
+        `;
+        
+        if (usage.recordings_count === 0) {
+            usageDisplay.textContent = 'First file free!';
+        } else if (canGenerate) {
+            usageDisplay.textContent = `${usedMinutes}/${freeMinutes}min used`;
+        } else {
+            usageDisplay.textContent = 'Upgrade needed';
+        }
+        
+        userInfo.appendChild(usageDisplay);
+    }
+}
+
+// Call showUsageInfo when user logs in or page loads
+function initializeUsageDisplay() {
+    if (firebaseAuth && firebaseAuth.currentUser) {
+        showUsageInfo();
+    }
 } 
