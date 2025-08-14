@@ -12,6 +12,10 @@ let currentDurationFilter = '';
 let firebaseApp = null;
 let firebaseAuth = null;
 
+// Modal navigation state
+let currentRecordings = [];
+let currentRecordingIndex = -1;
+
 function formatDateTime(ts) {
   if (!ts) return '';
   const d = new Date(ts * 1000);
@@ -82,13 +86,16 @@ async function loadDashboardList(page = 1) {
     currentPage = pagination.page;
     totalPages = pagination.total_pages;
     
+    // Store recordings for modal navigation
+    currentRecordings = recordings;
+    
     if (!recordings.length) {
       dashboardList.innerHTML = '<li>No recordings found.</li>';
       updatePaginationControls();
       return;
     }
     dashboardList.innerHTML = '';
-    recordings.forEach(rec => {
+    recordings.forEach((rec, index) => {
       const li = document.createElement('li');
       li.style.display = 'flex';
       li.style.alignItems = 'center';
@@ -124,10 +131,11 @@ async function loadDashboardList(page = 1) {
       playBtn.style.marginRight = '0.7em';
       playBtn.onclick = (e) => {
         e.preventDefault();
+        currentRecordingIndex = index;
         if (rec.audioUrl) {
-          showPlayModal(rec.audioUrl);
+          showPlayModal(rec, true); // true for auto-play
         } else {
-          showPlayModal(null, 'Audio unavailable for this recording.');
+          showPlayModal(rec, false, 'Audio unavailable for this recording.');
         }
       };
       iconsDiv.appendChild(playBtn);
@@ -140,32 +148,164 @@ async function loadDashboardList(page = 1) {
   }
 }
 
-function showPlayModal(audioUrl, errorMsg) {
-  // Simple modal for playback or error
+function showPlayModal(recording, autoPlay = false, errorMsg = null) {
+  // Remove existing modal
   let modal = document.getElementById('play-modal');
   if (modal) modal.remove();
+  
   modal = document.createElement('div');
   modal.id = 'play-modal';
+  modal.className = 'modal';
   modal.style.position = 'fixed';
   modal.style.top = '0';
   modal.style.left = '0';
   modal.style.width = '100vw';
   modal.style.height = '100vh';
-  modal.style.background = 'rgba(0,0,0,0.4)';
+  modal.style.background = 'rgba(15, 23, 42, 0.8)';
+  modal.style.backdropFilter = 'blur(12px) saturate(180%)';
+  modal.style.webkitBackdropFilter = 'blur(12px) saturate(180%)';
   modal.style.zIndex = '3000';
   modal.style.display = 'flex';
   modal.style.alignItems = 'center';
   modal.style.justifyContent = 'center';
-  modal.innerHTML = `
-    <div style="background:#fff; padding:2em; border-radius:10px; max-width:400px; min-width:350px; margin:auto; position:relative;">
-      <span id="close-play-modal" style="position:absolute; top:10px; right:16px; font-size:1.5em; cursor:pointer;">&times;</span>
-      ${audioUrl ? `<audio src="${audioUrl}" controls style="width:100%; margin-top:1em;"></audio>` : `<div style='color:#b00; margin-top:2em;'>${errorMsg || 'Audio unavailable.'}</div>`}
-    </div>
-  `;
+  modal.style.animation = 'fadeIn 0.3s ease';
+  
+  const modalContent = document.createElement('div');
+  modalContent.className = 'modal-content';
+  modalContent.style.background = 'rgba(255, 255, 255, 0.25)';
+  modalContent.style.backdropFilter = 'blur(40px) saturate(180%)';
+  modalContent.style.webkitBackdropFilter = 'blur(40px) saturate(180%)';
+  modalContent.style.padding = '2rem';
+  modalContent.style.borderRadius = '24px';
+  modalContent.style.maxWidth = '600px';
+  modalContent.style.width = '90%';
+  modalContent.style.margin = 'auto';
+  modalContent.style.position = 'relative';
+  modalContent.style.boxShadow = '0 8px 32px rgba(31, 38, 135, 0.37)';
+  modalContent.style.border = '1px solid rgba(255, 255, 255, 0.18)';
+  modalContent.style.animation = 'slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+  modalContent.id = 'modal-content';
+  
+  if (errorMsg) {
+    modalContent.innerHTML = `
+      <span id="close-play-modal" style="position:absolute; top:20px; right:24px; font-size:1.75rem; cursor:pointer; color:#64748b; transition:all 0.3s ease; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(255,255,255,0.1); backdrop-filter:blur(10px);">&times;</span>
+      <div style='color:#ef4444; margin-top:2rem; text-align:center; font-size:1.1rem;'>${errorMsg}</div>
+    `;
+  } else {
+    const dateStr = recording.created ? formatDateTime(recording.created) : (recording.blobCreated ? formatDateTime(recording.blobCreated) : '');
+    const textStr = recording.text || (recording.blobName ? recording.blobName : '(no text)');
+    const userStr = recording.user_email ? recording.user_email : '(anonymous)';
+    const durationStr = recording.duration ? formatDuration(recording.duration) : '';
+    const voiceStr = recording.voice || 'Unknown voice';
+    
+    modalContent.innerHTML = `
+      <span id="close-play-modal" style="position:absolute; top:20px; right:24px; font-size:1.75rem; cursor:pointer; color:#64748b; transition:all 0.3s ease; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(255,255,255,0.1); backdrop-filter:blur(10px);">&times;</span>
+      
+      <!-- Navigation arrows -->
+      <button id="prev-recording" style="position:absolute; left:20px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.2); border:none; border-radius:50%; width:48px; height:48px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:1.5rem; transition:all 0.3s ease; backdrop-filter:blur(10px);" ${currentRecordingIndex <= 0 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>‹</button>
+      <button id="next-recording" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.2); border:none; border-radius:50%; width:48px; height:48px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:1.5rem; transition:all 0.3s ease; backdrop-filter:blur(10px);" ${currentRecordingIndex >= currentRecordings.length - 1 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>›</button>
+      
+      <!-- Metadata above player -->
+      <div style="text-align:center; margin-bottom:2rem; color:#1e293b;">
+        <h3 style="margin-bottom:1rem; font-size:1.3rem; font-weight:600;">${voiceStr}</h3>
+        <div style="margin-bottom:0.5rem; color:#64748b; font-size:0.9rem;">${dateStr}${durationStr ? ' • ' + durationStr : ''}</div>
+        <div style="margin-bottom:0.5rem; color:#64748b; font-size:0.9rem;">User: ${userStr}</div>
+        <div style="background:rgba(255,255,255,0.3); padding:1rem; border-radius:12px; margin-top:1rem; text-align:left; max-height:120px; overflow-y:auto; font-size:0.95rem; line-height:1.5;">${textStr}</div>
+      </div>
+      
+      <!-- Audio player -->
+      <audio id="modal-audio" src="${recording.audioUrl}" controls style="width:100%; margin:1rem 0; border-radius:12px; background:rgba(255,255,255,0.5);" ${autoPlay ? 'autoplay' : ''}></audio>
+    `;
+  }
+  
+  modal.appendChild(modalContent);
   document.body.appendChild(modal);
-  document.getElementById('close-play-modal').onclick = () => { modal.remove(); };
-  window.onclick = (e) => { if (e.target === modal) { modal.remove(); } };
+  
+  // Event handlers
+  document.getElementById('close-play-modal').onclick = () => { 
+    modal.style.animation = 'fadeOut 0.2s ease';
+    setTimeout(() => modal.remove(), 200);
+  };
+  
+  modal.onclick = (e) => { 
+    if (e.target === modal) { 
+      modal.style.animation = 'fadeOut 0.2s ease';
+      setTimeout(() => modal.remove(), 200);
+    } 
+  };
+  
+  // Navigation handlers
+  if (!errorMsg) {
+    const prevBtn = document.getElementById('prev-recording');
+    const nextBtn = document.getElementById('next-recording');
+    
+    if (prevBtn && !prevBtn.disabled) {
+      prevBtn.onclick = () => navigateRecording(-1);
+      prevBtn.onmouseover = () => { if (!prevBtn.disabled) prevBtn.style.background = 'rgba(255,255,255,0.3)'; };
+      prevBtn.onmouseout = () => { if (!prevBtn.disabled) prevBtn.style.background = 'rgba(255,255,255,0.2)'; };
+    }
+    
+    if (nextBtn && !nextBtn.disabled) {
+      nextBtn.onclick = () => navigateRecording(1);
+      nextBtn.onmouseover = () => { if (!nextBtn.disabled) nextBtn.style.background = 'rgba(255,255,255,0.3)'; };
+      nextBtn.onmouseout = () => { if (!nextBtn.disabled) nextBtn.style.background = 'rgba(255,255,255,0.2)'; };
+    }
+  }
+  
+  // Keyboard navigation
+  document.addEventListener('keydown', handleKeyboardNavigation);
 }
+
+function navigateRecording(direction) {
+  const newIndex = currentRecordingIndex + direction;
+  if (newIndex >= 0 && newIndex < currentRecordings.length) {
+    currentRecordingIndex = newIndex;
+    const recording = currentRecordings[currentRecordingIndex];
+    
+    // Animate transition
+    const modalContent = document.getElementById('modal-content');
+    if (modalContent) {
+      modalContent.style.animation = direction > 0 ? 'slideOutLeft 0.3s ease' : 'slideOutRight 0.3s ease';
+      setTimeout(() => {
+        if (recording.audioUrl) {
+          showPlayModal(recording, true); // Auto-play on navigation
+        } else {
+          showPlayModal(recording, false, 'Audio unavailable for this recording.');
+        }
+      }, 300);
+    }
+  }
+}
+
+function handleKeyboardNavigation(e) {
+  const modal = document.getElementById('play-modal');
+  if (!modal) return;
+  
+  switch(e.key) {
+    case 'Escape':
+      modal.click(); // Close modal
+      break;
+    case 'ArrowLeft':
+      if (currentRecordingIndex > 0) {
+        navigateRecording(-1);
+      }
+      break;
+    case 'ArrowRight':
+      if (currentRecordingIndex < currentRecordings.length - 1) {
+        navigateRecording(1);
+      }
+      break;
+  }
+}
+
+// Clean up keyboard listener when modal is removed
+const originalRemove = Element.prototype.remove;
+Element.prototype.remove = function() {
+  if (this.id === 'play-modal') {
+    document.removeEventListener('keydown', handleKeyboardNavigation);
+  }
+  originalRemove.call(this);
+};
 
 function updatePaginationControls() {
   const paginationControls = document.getElementById('pagination-controls');
@@ -280,6 +420,54 @@ function setupSearchHandlers() {
   });
 }
 
+// Add CSS animations to the page
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes slideOutLeft {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+  }
+  
+  @keyframes slideOutRight {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+`;
+document.head.appendChild(style);
+
 (async function() {
   await loadFirebase();
   firebaseAuth.onAuthStateChanged(user => {
@@ -291,4 +479,4 @@ function setupSearchHandlers() {
       dashboardList.innerHTML = '<li>Please log in as a superuser to view the dashboard.</li>';
     }
   });
-})(); 
+})();
