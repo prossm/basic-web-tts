@@ -206,11 +206,11 @@ function showPlayModal(recording, autoPlay = false, errorMsg = null) {
       <button id="next-recording" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.2); border:none; border-radius:50%; width:48px; height:48px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:1.5rem; transition:all 0.3s ease; backdrop-filter:blur(10px);" ${currentRecordingIndex >= currentRecordings.length - 1 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>›</button>
       
       <!-- Metadata above player -->
-      <div style="text-align:center; margin-bottom:2rem; color:#1e293b;">
-        <h3 style="margin-bottom:1rem; font-size:1.3rem; font-weight:600;">${voiceStr}</h3>
-        <div style="margin-bottom:0.5rem; color:#64748b; font-size:0.9rem;">${dateStr}${durationStr ? ' • ' + durationStr : ''}</div>
-        <div style="margin-bottom:0.5rem; color:#64748b; font-size:0.9rem;">User: ${userStr}</div>
-        <div style="background:rgba(255,255,255,0.3); padding:1rem; border-radius:12px; margin-top:1rem; text-align:left; max-height:120px; overflow-y:auto; font-size:0.95rem; line-height:1.5;">${textStr}</div>
+      <div style="text-align:center; margin-bottom:2rem;">
+        <h3 style="margin-bottom:1rem; font-size:1.3rem; font-weight:600; color:#0f172a; text-shadow: 0 1px 2px rgba(255,255,255,0.8);">${voiceStr}</h3>
+        <div style="margin-bottom:0.5rem; color:#1e293b; font-size:0.9rem; font-weight:500; text-shadow: 0 1px 1px rgba(255,255,255,0.6);">${dateStr}${durationStr ? ' • ' + durationStr : ''}</div>
+        <div style="margin-bottom:0.5rem; color:#1e293b; font-size:0.9rem; font-weight:500; text-shadow: 0 1px 1px rgba(255,255,255,0.6);">User: ${userStr}</div>
+        <div style="background:rgba(255,255,255,0.6); padding:1rem; border-radius:12px; margin-top:1rem; text-align:left; max-height:120px; overflow-y:auto; font-size:0.95rem; line-height:1.5; color:#0f172a; border: 1px solid rgba(255,255,255,0.4);">${textStr}</div>
       </div>
       
       <!-- Audio player -->
@@ -281,6 +281,8 @@ function handleKeyboardNavigation(e) {
   const modal = document.getElementById('play-modal');
   if (!modal) return;
   
+  const audio = document.getElementById('modal-audio');
+  
   switch(e.key) {
     case 'Escape':
       modal.click(); // Close modal
@@ -293,6 +295,17 @@ function handleKeyboardNavigation(e) {
     case 'ArrowRight':
       if (currentRecordingIndex < currentRecordings.length - 1) {
         navigateRecording(1);
+      }
+      break;
+    case ' ':
+    case 'Spacebar':
+      e.preventDefault(); // Prevent page scrolling
+      if (audio) {
+        if (audio.paused) {
+          audio.play();
+        } else {
+          audio.pause();
+        }
       }
       break;
   }
