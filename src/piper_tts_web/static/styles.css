@@ -20,7 +20,7 @@
     --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
     
     /* Backgrounds */
-    --background-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --background-primary: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%, #f1f5f9 100%);
     --background-secondary: #f8fafc;
     --background-card: rgba(255, 255, 255, 0.95);
     
@@ -87,8 +87,8 @@ header nav a:hover {
 /* Main container with glass card effect */
 .container {
     max-width: 900px;
-    margin: var(--spacing-xl) auto;
-    padding: var(--spacing-xl);
+    margin: 2rem auto;
+    padding: 2rem;
     background: var(--background-card);
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-xl);
@@ -111,7 +111,7 @@ header nav a:hover {
 
 h1, h2 {
     text-align: center;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: 1.5rem;
     background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -130,7 +130,7 @@ h2 {
 
 /* Form Elements */
 .form-group {
-    margin-bottom: 1.75rem;
+    margin-bottom: 1.25rem;
 }
 
 label {
@@ -250,21 +250,21 @@ textarea.form-control {
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     flex-wrap: wrap;
 }
 
 /* Input Section */
 .input-section {
-    margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-lg);
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Audio Section */
 .audio-section {
-    margin-top: var(--spacing-lg);
-    padding-top: var(--spacing-lg);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
 }
 
 audio {
@@ -277,7 +277,7 @@ audio {
 
 /* Progress Bar */
 .progress-container {
-    margin: var(--spacing-lg) 0;
+    margin: 1rem 0 0.5rem 0;
 }
 
 .progress-bar {
@@ -328,13 +328,14 @@ audio {
 .status-message {
     display: inline-flex;
     align-items: center;
-    padding: 0.75rem 1.25rem;
+    padding: 0.5rem 1rem;
     border-radius: var(--border-radius);
     font-weight: 500;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     animation: fadeInUp 0.3s ease;
+    font-size: 0.875rem;
 }
 
 @keyframes fadeInUp {
@@ -349,15 +350,20 @@ audio {
 }
 
 .status-message.error {
-    background: rgba(239, 68, 68, 0.1);
+    background: rgba(239, 68, 68, 0.15);
     color: var(--error-color);
-    border-color: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
 }
 
 .status-message.success {
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(16, 185, 129, 0.15);
     color: var(--success-color);
-    border-color: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Hide empty status messages */
+.status-message:empty {
+    display: none !important;
 }
 
 /* Download Button - Mobile Only */
@@ -451,6 +457,12 @@ audio {
         border-radius: var(--border-radius);
     }
     
+    body > div:not(.container):not(.modal),
+    footer {
+        margin: 1rem;
+        padding: 1rem;
+    }
+    
     header nav {
         padding: 1rem !important;
     }
@@ -476,7 +488,7 @@ audio {
     /* Show download button only on mobile */
     #download-button {
         display: block !important;
-        margin-top: 1rem;
+        margin-top: 0.75rem;
     }
     
     .modal-content {
@@ -489,7 +501,6 @@ audio {
 
 @media (max-width: 480px) {
     :root {
-        --spacing-xl: 1.5rem;
         --border-radius-lg: 20px;
     }
     
@@ -500,6 +511,12 @@ audio {
     .container {
         margin: 0.5rem;
         padding: 1rem;
+    }
+    
+    body > div:not(.container):not(.modal),
+    footer {
+        margin: 0.5rem;
+        padding: 0.75rem;
     }
     
     .modal-content {
@@ -553,4 +570,55 @@ textarea:focus {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Footer and external content styling */
+hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+    margin: 2rem 0 1.5rem 0;
+}
+
+/* Description text below main container */
+body > div:not(.container):not(.modal) {
+    max-width: 800px;
+    margin: 0 auto 2rem auto;
+    padding: 1.5rem 2rem;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* Footer styling */
+footer {
+    max-width: 800px;
+    margin: 1.5rem auto;
+    padding: 1rem 2rem;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+}
+
+footer a:hover {
+    background: rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
 }
