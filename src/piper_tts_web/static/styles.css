@@ -22,7 +22,7 @@
     /* Backgrounds */
     --background-primary: linear-gradient(135deg, #fef3c7 0%, #fde68a 20%, #fed7aa 40%, #fecaca 60%, #e9d5ff 80%, #c7d2fe 100%);
     --background-secondary: #f8fafc;
-    --background-card: rgba(255, 255, 255, 0.95);
+    --background-card: rgba(252, 248, 243, 0.95);
     
     /* Text colors */
     --text-primary: #1e293b;
@@ -171,6 +171,11 @@ select.form-control {
     background-position: right 1.25rem center;
     padding-right: 3rem;
     cursor: pointer;
+}
+
+/* Prevent dropdown arrow from animating */
+select.form-control:focus {
+    transform: none !important;
 }
 
 textarea.form-control {
