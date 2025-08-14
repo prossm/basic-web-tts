@@ -9,12 +9,18 @@ The Basic TTS application now includes full RevenueCat integration with the foll
 ## Backend Configuration
 
 ### Environment Variables Required
-Add these environment variables to your deployment configuration:
+Configure these environment variables via [dashboard.disco.cloud](https://dashboard.disco.cloud) for cloud deployment:
 
-```bash
-# RevenueCat API Configuration
-REVENUECAT_API_KEY=your_revenuecat_secret_api_key_here
-```
+- `REVENUECAT_API_KEY` - Your RevenueCat secret API key from the dashboard
+- Firebase environment variables (for user authentication):
+  - `FIREBASE_API_KEY`
+  - `FIREBASE_AUTH_DOMAIN`
+  - `FIREBASE_PROJECT_ID`
+  - `FIREBASE_STORAGE_BUCKET`
+  - `FIREBASE_MESSAGING_SENDER_ID`
+  - `FIREBASE_APP_ID`
+  - `FIREBASE_MEASUREMENT_ID`
+  - `FIREBASE_SERVICE_ACCOUNT_JSON`
 
 ### Usage Limits
 The following limits are configured in `server.py`:

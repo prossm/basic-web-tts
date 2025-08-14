@@ -65,9 +65,41 @@ This repo was almost entirely vibe-coded in [Cursor](https://www.cursor.com/).
 3. Download voice files from [Piper Samples](https://rhasspy.github.io/piper-samples/) (you can listen to samples and download the ones you like)
    - Place the downloaded .onnx files and their corresponding .json files in the `models` directory
 
-### Production Deployment
+### Cloud Deployment (disco.cloud)
 
-The application is designed to be deployed using Docker and is configured for deployment on servers running Linux 24.04 or compatible distributions.
+The application is deployed to the cloud using [disco.cloud](https://disco.cloud) with automatic Docker containerization.
+
+1. Configure `disco.json` for the service:
+   ```json
+   {
+     "version": "1.0",
+     "services": {
+       "web": {
+         "port": 8000
+       }
+     }
+   }
+   ```
+
+2. Set environment variables via the [dashboard.disco.cloud](https://dashboard.disco.cloud) UI:
+   - `FIREBASE_API_KEY`
+   - `FIREBASE_AUTH_DOMAIN`
+   - `FIREBASE_PROJECT_ID` 
+   - `FIREBASE_STORAGE_BUCKET`
+   - `FIREBASE_MESSAGING_SENDER_ID`
+   - `FIREBASE_APP_ID`
+   - `FIREBASE_MEASUREMENT_ID`
+   - `FIREBASE_SERVICE_ACCOUNT_JSON`
+   - `REVENUECAT_API_KEY`
+
+3. Deploy using disco:
+   ```bash
+   disco deploy
+   ```
+
+### Local Docker Deployment
+
+For local Docker deployment:
 
 1. Build the Docker image:
    ```bash
@@ -79,17 +111,15 @@ The application is designed to be deployed using Docker and is configured for de
    docker run -p 8000:8000 -v $(pwd)/models:/app/models piper-tts-web
    ```
 
-3. For production deployment:
-   - The application is configured to work with Linux-based infrastructure
-   - Use the provided Dockerfile for consistent deployment
-   - Ensure proper volume mounting for voice models
-   - Configure appropriate environment variables for production settings
-
 ## Usage
 
-1. Start the server (development mode):
+### Cloud Deployment
+The application is deployed at [BasicTTS.com](https://basictts.com)
+
+### Local Development
+1. Start the development server:
    ```bash
-   python server.py
+   python -m piper_tts_web.server
    ```
    The server will start on `http://localhost:8000`
 
@@ -155,6 +185,8 @@ The application is designed to be deployed using Docker and is configured for de
 - The server expects voice model files to be in ONNX format
 - Temporary audio files are automatically cleaned up after processing
 - The web interface supports various playback speeds (0.25x to 2x)
-- All processing is done locally on your machine
-- Docker deployment is recommended for consistent environments 
-- Consider using [disco](https://disco.cloud/) for production deployments
+- Processing can be done locally or in the cloud
+- Docker deployment provides consistent environments
+- Cloud deployment via [disco.cloud](https://disco.cloud) for production
+- Firebase authentication integrated for user management
+- RevenueCat integration for subscription management
