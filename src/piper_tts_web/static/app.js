@@ -103,9 +103,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             });
             if (!response.ok) {
+                console.log('Response not OK:', response.status, response.statusText);
                 if (response.status === 402) {
                     // Payment required - show paywall
+                    console.log('402 Payment Required detected - showing paywall');
+                    clearInterval(progressInterval);
+                    progressContainer.style.display = 'none';
                     const errorData = await response.json();
+                    console.log('Error data:', errorData);
                     showPaywall(errorData.detail);
                     return;
                 }
