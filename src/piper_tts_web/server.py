@@ -519,18 +519,32 @@ async def check_revenuecat_subscription(uid: str) -> bool:
             
             if response.status_code == 200:
                 data = response.json()
+                logger.info(f"RevenueCat response for user {uid}: {data}")
+                
                 subscriber = data.get("subscriber", {})
                 entitlements = subscriber.get("entitlements", {})
                 
+                logger.info(f"Entitlements found: {entitlements}")
+                
                 # Check if user has any active entitlements
                 for entitlement_id, entitlement in entitlements.items():
-                    if entitlement.get("expires_date") is None:  # Lifetime subscription
+                    logger.info(f"Checking entitlement {entitlement_id}: {entitlement}")
+                    
+                    # Check for lifetime subscription (no expiration date)
+                    if entitlement.get("expires_date") is None:
+                        logger.info(f"Found lifetime subscription for entitlement {entitlement_id}")
                         return True
+                    
                     # Check if subscription is still active
                     expires_date = entitlement.get("expires_date")
-                    if expires_date and expires_date > time.time() * 1000:  # RevenueCat uses milliseconds
+                    current_time_ms = time.time() * 1000
+                    logger.info(f"Expires date: {expires_date}, Current time: {current_time_ms}")
+                    
+                    if expires_date and expires_date > current_time_ms:
+                        logger.info(f"Found active subscription for entitlement {entitlement_id}")
                         return True
                 
+                logger.info("No active entitlements found")
                 return False
             else:
                 logger.warning(f"RevenueCat API error: {response.status_code}")
