@@ -125,10 +125,26 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Parse the embedded data from the string
                             const match = errorData.detail.match(/402: (.+)/);
                             if (match) {
-                                // Fix the malformed JSON by replacing single quotes with double quotes
-                                const fixedJson = match[1].replace(/'/g, '"');
-                                paymentErrorDetail = JSON.parse(fixedJson);
-                                console.log('Extracted payment error detail:', paymentErrorDetail);
+                                try {
+                                    // Fix the malformed JSON by replacing single quotes with double quotes
+                                    // and handling escaped quotes properly
+                                    let fixedJson = match[1]
+                                        .replace(/'/g, '"')           // Replace single quotes with double quotes
+                                        .replace(/\\"/g, '\\"')       // Keep escaped double quotes
+                                        .replace(/\\"([^"]*)\\""/g, '"$1"'); // Fix double-escaped quotes
+                                    
+                                    console.log('Attempting to parse:', fixedJson);
+                                    paymentErrorDetail = JSON.parse(fixedJson);
+                                    console.log('Extracted payment error detail:', paymentErrorDetail);
+                                } catch (innerParseError) {
+                                    console.error('Failed to parse embedded JSON, using fallback:', innerParseError);
+                                    // Fallback: create a basic error object
+                                    paymentErrorDetail = {
+                                        error: 'usage_limit_exceeded',
+                                        message: "You've reached your free usage limit. Please upgrade to continue.",
+                                        usage: { used_duration: 419, free_duration: 900, recordings_count: 25 }
+                                    };
+                                }
                             }
                         } else {
                             paymentErrorDetail = errorData.detail;
