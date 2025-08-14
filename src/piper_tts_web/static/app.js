@@ -933,15 +933,19 @@ async function initRevenueCatPurchase() {
             purchases = await window.Purchases.Purchases.configure({
                 apiKey: revenueCatApiKey,
                 appUserId: appUserId,
+                // Force test/sandbox mode
+                sandbox: true,
             });
-            console.log('RevenueCat configured with nested format');
+            console.log('RevenueCat configured with nested format (sandbox mode)');
         } else if (typeof window.Purchases.configure === 'function') {
             // Direct format
             purchases = await window.Purchases.configure({
                 apiKey: revenueCatApiKey,
                 appUserId: appUserId,
+                // Force test/sandbox mode
+                sandbox: true,
             });
-            console.log('RevenueCat configured with direct format');
+            console.log('RevenueCat configured with direct format (sandbox mode)');
         } else {
             throw new Error('No valid configure method found on Purchases object');
         }
