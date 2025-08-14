@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const voiceSelect = document.getElementById('voice-select');
     const convertButton = document.getElementById('convert-button');
     const audioPlayer = document.getElementById('audio-player');
+    const downloadButton = document.getElementById('download-button');
     const statusMessage = document.getElementById('status-message');
     const progressContainer = document.querySelector('.progress-container');
     const progressText = document.querySelector('.progress-text');
@@ -193,6 +194,11 @@ document.addEventListener('DOMContentLoaded', function() {
             audioPlayer.src = audioUrl;
             audioPlayer.style.display = 'block';
             statusMessage.textContent = '';
+            
+            // Set up download button (only visible on mobile via CSS)
+            downloadButton.href = audioUrl;
+            downloadButton.download = `speech-${Date.now()}.wav`;
+            downloadButton.style.display = 'block';
             
             // Refresh usage display after successful generation
             if (firebaseAuth && firebaseAuth.currentUser) {

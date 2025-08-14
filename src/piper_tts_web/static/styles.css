@@ -208,6 +208,11 @@ input[type="range"]::-webkit-slider-thumb {
     cursor: pointer;
 }
 
+/* Download Button - Mobile Only */
+#download-button {
+    display: none !important;
+}
+
 /* Responsive Design */
 @media (max-width: 600px) {
     .container {
@@ -222,6 +227,12 @@ input[type="range"]::-webkit-slider-thumb {
     .playback-controls {
         flex-direction: column;
         align-items: stretch;
+    }
+    
+    /* Show download button only on mobile */
+    #download-button {
+        display: block !important;
+        margin-top: 0.5rem;
     }
 }
 
