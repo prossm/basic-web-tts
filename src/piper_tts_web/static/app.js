@@ -810,7 +810,7 @@ async function initRevenueCatPurchase() {
     }
     
     // Initialize RevenueCat with your public API key
-    const revenueCatApiKey = 'appl_YOUR_PUBLIC_API_KEY_HERE'; // Replace with actual key
+    const revenueCatApiKey = 'rcb_QKFmTOiOnWADwtcAadurQldsNlNN';
     
     try {
         await window.Purchases.configure(revenueCatApiKey);
@@ -848,11 +848,11 @@ function setupActualPurchaseFlow() {
                 
                 // Get available offerings
                 const offerings = await window.Purchases.getOfferings();
-                const currentOffering = offerings.current;
+                const premiumOffering = offerings.all['premium_monthly'];
                 
-                if (currentOffering && currentOffering.monthly) {
+                if (premiumOffering && premiumOffering.monthly) {
                     // Purchase the monthly package
-                    const purchaseResult = await window.Purchases.purchasePackage(currentOffering.monthly);
+                    const purchaseResult = await window.Purchases.purchasePackage(premiumOffering.monthly);
                     
                     if (purchaseResult.customerInfo.entitlements.active['premium']) {
                         // Purchase successful

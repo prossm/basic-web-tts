@@ -23,19 +23,19 @@ The following limits are configured in `server.py`:
 
 ## Frontend Configuration
 
-### RevenueCat Public API Key
-In `app.js`, replace the placeholder with your actual public API key:
+### RevenueCat Configuration
+The app is configured with the following RevenueCat settings:
 
 ```javascript
-// Line ~805 in app.js
-const revenueCatApiKey = 'appl_YOUR_PUBLIC_API_KEY_HERE'; // Replace with actual key
+// Public API Key (already configured)
+const revenueCatApiKey = 'rcb_QKFmTOiOnWADwtcAadurQldsNlNN';
 ```
 
-### Required RevenueCat Configuration
-1. **Create a RevenueCat App**: Set up your app in the RevenueCat dashboard
-2. **Configure Products**: Create a monthly subscription product (currently hardcoded as `monthly`)
-3. **Set Up Entitlements**: Create a `premium` entitlement that grants unlimited access
-4. **Configure Offerings**: Create a current offering with your monthly subscription
+### RevenueCat Dashboard Configuration
+1. **App**: Basic TTS app created in RevenueCat dashboard ✅
+2. **Product**: Monthly subscription product ID: `monthly` ✅
+3. **Entitlement**: `premium` entitlement for unlimited access ✅
+4. **Offering**: `premium_monthly` offering identifier ✅
 
 ## Features Implemented
 
@@ -71,9 +71,9 @@ Use RevenueCat's sandbox environment for testing purchases without real charges.
 
 ## Deployment Checklist
 
-- [ ] Set `REVENUECAT_API_KEY` environment variable
-- [ ] Replace placeholder API key in `app.js`
-- [ ] Configure RevenueCat products and entitlements
+- [x] Set `REVENUECAT_API_KEY` environment variable
+- [x] Configure public API key in `app.js`
+- [x] Configure RevenueCat products and entitlements
 - [ ] Test purchase flow in sandbox environment
 - [ ] Test usage tracking and limit enforcement
 - [ ] Verify subscription status checking
