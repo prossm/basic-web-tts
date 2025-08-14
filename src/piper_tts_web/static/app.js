@@ -896,7 +896,11 @@ async function initRevenueCatPurchase() {
     if (!window.Purchases) {
         console.log('RevenueCat SDK not loaded, attempting to load...');
         try {
-            await loadRevenueCatSDK();
+            // Try to import from the installed npm package
+            if (typeof importScripts === 'undefined') {
+                // We're in a regular browser environment
+                await loadRevenueCatSDK();
+            }
             console.log('RevenueCat SDK loaded successfully');
         } catch (error) {
             console.error('Failed to load RevenueCat SDK:', error);
@@ -935,16 +939,24 @@ async function initRevenueCatPurchase() {
 }
 
 async function loadRevenueCatSDK() {
-    console.log('Loading RevenueCat SDK...');
+    console.log('Loading RevenueCat SDK from static assets...');
+    
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@revenuecat/purchases-js@3.0.0/dist/purchases.min.js';
+        script.src = '/static/revenuecat-purchases.js';
         script.onload = () => {
-            console.log('RevenueCat SDK script loaded');
-            resolve();
+            console.log('RevenueCat SDK loaded successfully from static assets');
+            
+            // The SDK should now be available as a global
+            if (window.Purchases) {
+                resolve();
+            } else {
+                console.error('RevenueCat SDK loaded but Purchases not available');
+                reject(new Error('RevenueCat SDK loaded but Purchases object not found'));
+            }
         };
         script.onerror = (error) => {
-            console.error('RevenueCat SDK script failed to load:', error);
+            console.error('Failed to load RevenueCat SDK from static assets:', error);
             reject(error);
         };
         document.head.appendChild(script);

@@ -13,6 +13,7 @@
         "FIREBASE_MESSAGING_SENDER_ID": "",
         "FIREBASE_APP_ID": "",
         "FIREBASE_MEASUREMENT_ID": "",
-        "FIREBASE_SERVICE_ACCOUNT_JSON": ""
+        "FIREBASE_SERVICE_ACCOUNT_JSON": "",
+        "REVENUECAT_API_KEY": ""
     }
 }

@@ -1,0 +1,16 @@
+{
+  "name": "basictts-frontend",
+  "version": "1.0.0",
+  "description": "Frontend dependencies for BasicTTS",
+  "scripts": {
+    "build": "node build.js",
+    "install-deps": "npm install",
+    "postinstall": "node copy-assets.js"
+  },
+  "dependencies": {
+    "@revenuecat/purchases-js": "^3.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}
