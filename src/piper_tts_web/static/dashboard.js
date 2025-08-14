@@ -177,7 +177,7 @@ function showPlayModal(recording, autoPlay = false, errorMsg = null) {
   modalContent.style.webkitBackdropFilter = 'blur(40px) saturate(180%)';
   modalContent.style.padding = '2rem';
   modalContent.style.borderRadius = '24px';
-  modalContent.style.maxWidth = '600px';
+  modalContent.style.maxWidth = '640px';
   modalContent.style.width = '90%';
   modalContent.style.margin = 'auto';
   modalContent.style.position = 'relative';
@@ -206,11 +206,14 @@ function showPlayModal(recording, autoPlay = false, errorMsg = null) {
       <button id="next-recording" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.2); border:none; border-radius:50%; width:48px; height:48px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:1.5rem; transition:all 0.3s ease; backdrop-filter:blur(10px);" ${currentRecordingIndex >= currentRecordings.length - 1 ? 'disabled style="opacity:0.3; cursor:not-allowed;"' : ''}>›</button>
       
       <!-- Metadata above player -->
-      <div style="text-align:center; margin-bottom:2rem;">
-        <h3 style="margin-bottom:1rem; font-size:1.3rem; font-weight:600; color:#0f172a; text-shadow: 0 1px 2px rgba(255,255,255,0.8);">${voiceStr}</h3>
-        <div style="margin-bottom:0.5rem; color:#1e293b; font-size:0.9rem; font-weight:500; text-shadow: 0 1px 1px rgba(255,255,255,0.6);">${dateStr}${durationStr ? ' • ' + durationStr : ''}</div>
-        <div style="margin-bottom:0.5rem; color:#1e293b; font-size:0.9rem; font-weight:500; text-shadow: 0 1px 1px rgba(255,255,255,0.6);">User: ${userStr}</div>
-        <div style="background:rgba(255,255,255,0.6); padding:1rem; border-radius:12px; margin-top:1rem; text-align:left; max-height:120px; overflow-y:auto; font-size:0.95rem; line-height:1.5; color:#0f172a; border: 1px solid rgba(255,255,255,0.4);">${textStr}</div>
+      <div style="text-align:center; margin-bottom:2rem; position: relative;">
+        <!-- Gradient spotlight background -->
+        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 120px; background: radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 40%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: -1; animation: fadeInSpotlight 0.8s ease-out;"></div>
+        
+        <h3 style="margin-bottom:1rem; font-size:1.3rem; font-weight:600; color:#0f172a; text-shadow: 0 1px 2px rgba(255,255,255,0.8); position: relative; z-index: 1;">${voiceStr}</h3>
+        <div style="margin-bottom:0.5rem; color:#1e293b; font-size:0.9rem; font-weight:500; text-shadow: 0 1px 1px rgba(255,255,255,0.6); position: relative; z-index: 1;">${dateStr}${durationStr ? ' • ' + durationStr : ''}</div>
+        <div style="margin-bottom:0.5rem; color:#1e293b; font-size:0.9rem; font-weight:500; text-shadow: 0 1px 1px rgba(255,255,255,0.6); position: relative; z-index: 1;">User: ${userStr}</div>
+        <div style="background:rgba(255,255,255,0.6); padding:1rem; border-radius:12px; margin-top:1rem; text-align:left; max-height:120px; overflow-y:auto; font-size:0.95rem; line-height:1.5; color:#0f172a; border: 1px solid rgba(255,255,255,0.4); position: relative; z-index: 1;">${textStr}</div>
       </div>
       
       <!-- Audio player -->
@@ -476,6 +479,17 @@ style.textContent = `
     to {
       opacity: 0;
       transform: translateX(100%);
+    }
+  }
+  
+  @keyframes fadeInSpotlight {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
     }
   }
 `;
