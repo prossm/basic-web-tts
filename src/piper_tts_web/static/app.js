@@ -923,13 +923,31 @@ async function initRevenueCatPurchase() {
             : null; // null for anonymous users
         
         console.log('Using app user ID:', appUserId || 'anonymous');
+        console.log('Purchases object structure:', window.Purchases);
+        console.log('Available methods on Purchases:', Object.keys(window.Purchases));
         
-        // Initialize RevenueCat (using unpkg format)
-        await window.Purchases.Purchases.configure({
-            apiKey: revenueCatApiKey,
-            appUserId: appUserId, // This is required
-        });
-        console.log('RevenueCat configured successfully');
+        // Initialize RevenueCat - try different API formats
+        let purchases;
+        if (window.Purchases.Purchases && typeof window.Purchases.Purchases.configure === 'function') {
+            // Nested format
+            purchases = await window.Purchases.Purchases.configure({
+                apiKey: revenueCatApiKey,
+                appUserId: appUserId,
+            });
+            console.log('RevenueCat configured with nested format');
+        } else if (typeof window.Purchases.configure === 'function') {
+            // Direct format
+            purchases = await window.Purchases.configure({
+                apiKey: revenueCatApiKey,
+                appUserId: appUserId,
+            });
+            console.log('RevenueCat configured with direct format');
+        } else {
+            throw new Error('No valid configure method found on Purchases object');
+        }
+        
+        // Store the configured instance
+        window.PurchasesInstance = purchases;
         
         setupActualPurchaseFlow();
         console.log('RevenueCat purchase flow set up');
@@ -949,6 +967,9 @@ async function loadRevenueCatSDK() {
             console.log('RevenueCat SDK loaded successfully from unpkg');
             
             // The SDK should now be available as a global
+            console.log('Checking what Purchases object looks like:', window.Purchases);
+            console.log('Purchases keys:', Object.keys(window.Purchases || {}));
+            
             if (window.Purchases) {
                 resolve();
             } else {
@@ -974,8 +995,21 @@ function setupActualPurchaseFlow() {
                 purchaseButton.textContent = 'Processing...';
                 purchaseButton.style.pointerEvents = 'none';
                 
-                // Get available offerings (using unpkg format)
-                const offerings = await window.Purchases.Purchases.getOfferings();
+                // Get available offerings - try different formats
+                let offerings;
+                if (window.PurchasesInstance && typeof window.PurchasesInstance.getOfferings === 'function') {
+                    offerings = await window.PurchasesInstance.getOfferings();
+                    console.log('Got offerings from PurchasesInstance');
+                } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.getOfferings === 'function') {
+                    offerings = await window.Purchases.Purchases.getOfferings();
+                    console.log('Got offerings from nested Purchases');
+                } else if (typeof window.Purchases.getOfferings === 'function') {
+                    offerings = await window.Purchases.getOfferings();
+                    console.log('Got offerings from direct Purchases');
+                } else {
+                    throw new Error('No valid getOfferings method found');
+                }
+                
                 console.log('Available offerings:', offerings);
                 console.log('Offerings.all:', offerings.all);
                 console.log('Offerings.current:', offerings.current);
@@ -998,8 +1032,22 @@ function setupActualPurchaseFlow() {
                 
                 if (packageToPurchase) {
                     console.log('Purchasing package:', packageToPurchase);
-                    // Purchase the package (using unpkg format)
-                    const purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
+                    
+                    // Purchase the package - try different formats
+                    let purchaseResult;
+                    if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
+                        purchaseResult = await window.PurchasesInstance.purchasePackage(packageToPurchase);
+                        console.log('Purchased via PurchasesInstance');
+                    } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
+                        purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
+                        console.log('Purchased via nested Purchases');
+                    } else if (typeof window.Purchases.purchasePackage === 'function') {
+                        purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
+                        console.log('Purchased via direct Purchases');
+                    } else {
+                        throw new Error('No valid purchasePackage method found');
+                    }
+                    
                     console.log('Purchase result:', purchaseResult);
                     
                     if (purchaseResult.customerInfo.entitlements.active['premium']) {
