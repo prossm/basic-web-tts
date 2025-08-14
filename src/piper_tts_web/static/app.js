@@ -977,6 +977,8 @@ function setupActualPurchaseFlow() {
                 // Get available offerings (using unpkg format)
                 const offerings = await window.Purchases.Purchases.getOfferings();
                 console.log('Available offerings:', offerings);
+                console.log('Offerings.all:', offerings.all);
+                console.log('Offerings.current:', offerings.current);
                 
                 let packageToPurchase = null;
                 
@@ -1024,6 +1026,8 @@ function setupActualPurchaseFlow() {
                 }
             } catch (error) {
                 console.error('Purchase failed:', error);
+                console.error('Error details:', error.message);
+                console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
                 
                 // Reset button state
                 purchaseButton.textContent = 'Upgrade Now - $4.99/month';
