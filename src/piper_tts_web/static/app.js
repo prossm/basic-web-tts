@@ -917,8 +917,8 @@ async function initRevenueCatPurchase() {
     console.log('Configuring RevenueCat with API key:', revenueCatApiKey);
     
     try {
-        // Initialize RevenueCat
-        await window.Purchases.configure({
+        // Initialize RevenueCat (using unpkg format)
+        await window.Purchases.Purchases.configure({
             apiKey: revenueCatApiKey,
         });
         console.log('RevenueCat configured successfully');
@@ -926,7 +926,7 @@ async function initRevenueCatPurchase() {
         // Set up user identification if logged in
         if (firebaseAuth && firebaseAuth.currentUser) {
             console.log('Logging in user to RevenueCat:', firebaseAuth.currentUser.uid);
-            await window.Purchases.logIn(firebaseAuth.currentUser.uid);
+            await window.Purchases.Purchases.logIn(firebaseAuth.currentUser.uid);
             console.log('User logged in to RevenueCat');
         }
         
@@ -939,13 +939,13 @@ async function initRevenueCatPurchase() {
 }
 
 async function loadRevenueCatSDK() {
-    console.log('Loading RevenueCat SDK from static assets...');
+    console.log('Loading RevenueCat SDK from unpkg CDN...');
     
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = '/static/revenuecat-purchases.js';
+        script.src = 'https://unpkg.com/@revenuecat/purchases-js';
         script.onload = () => {
-            console.log('RevenueCat SDK loaded successfully from static assets');
+            console.log('RevenueCat SDK loaded successfully from unpkg');
             
             // The SDK should now be available as a global
             if (window.Purchases) {
@@ -956,7 +956,7 @@ async function loadRevenueCatSDK() {
             }
         };
         script.onerror = (error) => {
-            console.error('Failed to load RevenueCat SDK from static assets:', error);
+            console.error('Failed to load RevenueCat SDK from unpkg:', error);
             reject(error);
         };
         document.head.appendChild(script);
@@ -973,8 +973,8 @@ function setupActualPurchaseFlow() {
                 purchaseButton.textContent = 'Processing...';
                 purchaseButton.style.pointerEvents = 'none';
                 
-                // Get available offerings
-                const offerings = await window.Purchases.getOfferings();
+                // Get available offerings (using unpkg format)
+                const offerings = await window.Purchases.Purchases.getOfferings();
                 console.log('Available offerings:', offerings);
                 
                 let packageToPurchase = null;
@@ -995,8 +995,8 @@ function setupActualPurchaseFlow() {
                 
                 if (packageToPurchase) {
                     console.log('Purchasing package:', packageToPurchase);
-                    // Purchase the package
-                    const purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
+                    // Purchase the package (using unpkg format)
+                    const purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
                     console.log('Purchase result:', purchaseResult);
                     
                     if (purchaseResult.customerInfo.entitlements.active['premium']) {
