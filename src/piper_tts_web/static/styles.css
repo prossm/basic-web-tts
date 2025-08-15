@@ -499,16 +499,16 @@ audio {
 }
 
 #usage-display.upgrade-needed {
-    background: #ef4444;
+    background: #f97316;
     color: white;
-    border: 1px solid #dc2626;
+    border: 1px solid #ea580c;
     cursor: pointer;
 }
 
 #usage-display.upgrade-needed:hover {
-    background: #dc2626;
+    background: #ea580c;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
 }
 
 #usage-display.first-free {

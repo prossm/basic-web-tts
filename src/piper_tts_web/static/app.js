@@ -739,13 +739,36 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check for upgrade URL parameter and show paywall
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('upgrade') === '1' && user) {
-          // Show paywall for upgrade request
-          setTimeout(() => {
-            showPaywall({
-              error: 'usage_limit_exceeded',
-              message: "You've reached your free usage limit. Please upgrade to continue.",
-              usage: { used_duration: 900, free_duration: 900, recordings_count: 20 }
-            });
+          // Get actual usage data and show paywall
+          setTimeout(async () => {
+            try {
+              const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+              const response = await fetch('/user-usage', {
+                headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+              });
+              if (response.ok) {
+                const data = await response.json();
+                showPaywall({
+                  error: 'usage_limit_exceeded',
+                  message: "You've reached your free usage limit. Please upgrade to continue.",
+                  usage: data.usage
+                });
+              } else {
+                // Fallback to example over-limit usage
+                showPaywall({
+                  error: 'usage_limit_exceeded',
+                  message: "You've reached your free usage limit. Please upgrade to continue.",
+                  usage: { total_duration: 1200, recordings_count: 20 }
+                });
+              }
+            } catch (error) {
+              // Fallback to example over-limit usage
+              showPaywall({
+                error: 'usage_limit_exceeded',
+                message: "You've reached your free usage limit. Please upgrade to continue.",
+                usage: { total_duration: 1200, recordings_count: 20 }
+              });
+            }
           }, 1000);
         }
       });
@@ -837,7 +860,7 @@ function showPaywall(errorDetails) {
 
     const usage = errorDetails.usage || {};
     console.log('Usage object in showPaywall:', usage);
-    const usedMinutes = Math.round((usage.used_duration || 0) / 60);
+    const usedMinutes = Math.round((usage.total_duration || usage.used_duration || 0) / 60);
     const freeMinutes = Math.round((15 * 60) / 60); // 15 minutes
     console.log('Calculated minutes - used:', usedMinutes, 'free:', freeMinutes);
 
@@ -898,6 +921,13 @@ function showPaywall(errorDetails) {
     // Close button functionality
     document.getElementById('close-paywall').onclick = () => {
         modal.remove();
+    };
+
+    // Click outside to close functionality
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
     };
 
     // Initialize RevenueCat purchase flow
