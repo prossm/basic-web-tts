@@ -498,11 +498,59 @@ document.head.appendChild(style);
 (async function() {
   await loadFirebase();
   firebaseAuth.onAuthStateChanged(user => {
+    // Update navigation visibility
+    const authLinks = document.getElementById('auth-links');
+    const userInfo = document.getElementById('user-info');
+    const libraryLink = document.getElementById('library-link');
+    
     if (user) {
+      if (authLinks) authLinks.style.display = 'none';
+      if (userInfo) {
+        userInfo.style.display = 'inline';
+        userInfo.innerHTML = `
+          <div style="position:relative; display:inline-block;">
+            <span style="cursor:pointer; color:#222; font-weight:500;" id="account-dropdown-trigger">
+              Account <span style="font-size:0.8em;">▼</span>
+            </span>
+            <div id="account-dropdown" style="display:none; position:absolute; top:100%; right:0; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1); min-width:140px; z-index:1000; margin-top:5px;">
+              <a href="/library" style="display:block; padding:0.5em 1em; text-decoration:none; color:#333; border-bottom:1px solid #eee;">My Library</a>
+              <a href="#" id="logout-link" style="display:block; padding:0.5em 1em; text-decoration:none; color:#333;">Log Out</a>
+            </div>
+          </div>
+        `;
+        
+        // Account dropdown functionality
+        const trigger = document.getElementById('account-dropdown-trigger');
+        const dropdown = document.getElementById('account-dropdown');
+        const logoutLink = document.getElementById('logout-link');
+        
+        if (trigger && dropdown) {
+          trigger.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+          };
+          
+          document.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+          });
+        }
+        
+        if (logoutLink) {
+          logoutLink.onclick = (e) => {
+            e.preventDefault();
+            firebaseAuth.signOut();
+          };
+        }
+      }
+      if (libraryLink) libraryLink.style.display = 'inline';
+      
       setupSearchHandlers();
       loadVoicesForFilter();
       loadDashboardList();
     } else {
+      if (authLinks) authLinks.style.display = 'inline';
+      if (userInfo) userInfo.style.display = 'none';
+      if (libraryLink) libraryLink.style.display = 'none';
       dashboardList.innerHTML = '<li>Please log in as a superuser to view the dashboard.</li>';
     }
   });

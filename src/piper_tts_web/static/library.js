@@ -37,14 +37,51 @@ async function loadFirebase() {
 }
 
 function updateAuthUI(user) {
+  const dashboardLink = document.getElementById('dashboard-link');
+  
   if (user) {
     authLinks.style.display = 'none';
     userInfo.style.display = 'inline';
-    userInfo.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
-    attachAccountDropdownHandler();
+    userInfo.innerHTML = `
+      <div style="position:relative; display:inline-block;">
+        <span style="cursor:pointer; color:#222; font-weight:500;" id="account-dropdown-trigger">
+          Account <span style="font-size:0.8em;">▼</span>
+        </span>
+        <div id="account-dropdown" style="display:none; position:absolute; top:100%; right:0; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1); min-width:140px; z-index:1000; margin-top:5px;">
+          <a href="/dashboard" style="display:block; padding:0.5em 1em; text-decoration:none; color:#333; border-bottom:1px solid #eee;">Dashboard</a>
+          <a href="#" id="logout-link" style="display:block; padding:0.5em 1em; text-decoration:none; color:#333;">Log Out</a>
+        </div>
+      </div>
+    `;
+    
+    // Account dropdown functionality
+    const trigger = document.getElementById('account-dropdown-trigger');
+    const dropdown = document.getElementById('account-dropdown');
+    const logoutLink = document.getElementById('logout-link');
+    
+    if (trigger && dropdown) {
+      trigger.onclick = (e) => {
+        e.stopPropagation();
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      };
+      
+      document.addEventListener('click', () => {
+        dropdown.style.display = 'none';
+      });
+    }
+    
+    if (logoutLink) {
+      logoutLink.onclick = (e) => {
+        e.preventDefault();
+        firebaseAuth.signOut();
+      };
+    }
+    
+    if (dashboardLink) dashboardLink.style.display = 'inline';
   } else {
     userInfo.style.display = 'none';
     authLinks.style.display = 'inline';
+    if (dashboardLink) dashboardLink.style.display = 'none';
   }
 }
 

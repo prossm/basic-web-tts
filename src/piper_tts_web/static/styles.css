@@ -20,7 +20,7 @@
     --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
     
     /* Backgrounds */
-    --background-primary: linear-gradient(135deg, #fef3c7 0%, #fde68a 20%, #fed7aa 40%, #fecaca 60%, #e9d5ff 80%, #c7d2fe 100%);
+    --background-primary: linear-gradient(135deg, #fed7e2 0%, #fbb6ce 15%, #c084fc 30%, #a78bfa 45%, #60a5fa 60%, #fb923c 80%, #fef3c7 100%);
     --background-secondary: #f8fafc;
     --background-card: rgba(252, 248, 243, 0.95);
     
