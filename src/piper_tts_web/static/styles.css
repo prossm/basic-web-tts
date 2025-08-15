@@ -575,8 +575,8 @@ audio {
         align-items: stretch;
     }
     
-    /* Show download button only on mobile */
-    #download-button {
+    /* Show download button only on mobile when audio is available */
+    #download-button.show-mobile {
         display: block !important;
         margin-top: 0.75rem;
     }

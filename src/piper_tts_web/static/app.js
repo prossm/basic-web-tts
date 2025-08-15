@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressContainer = document.querySelector('.progress-container');
     const progressText = document.querySelector('.progress-text');
 
+    // Ensure download button is hidden initially on mobile
+    downloadButton.classList.remove('show-mobile');
+
     // Firebase dynamic config and auth logic
     let firebaseApp = null;
     let firebaseAuth = null;
@@ -61,6 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
             convertButton.disabled = true;
             statusMessage.textContent = '';
             progressContainer.style.display = 'block';
+            // Hide download button until new audio is generated
+            downloadButton.classList.remove('show-mobile');
             const progressFill = document.querySelector('.progress-fill');
             progressFill.style.width = '0%';
             progressText.textContent = '0%';
@@ -199,6 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
             downloadButton.href = audioUrl;
             downloadButton.download = `speech-${Date.now()}.wav`;
             downloadButton.style.display = 'block';
+            downloadButton.classList.add('show-mobile');
             
             // Refresh usage display after successful generation
             if (firebaseAuth && firebaseAuth.currentUser) {
@@ -224,6 +230,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error converting text to speech:', error);
             statusMessage.textContent = 'Error converting text to speech. Please try again.';
             progressContainer.style.display = 'none';
+            // Hide download button on error
+            downloadButton.classList.remove('show-mobile');
         } finally {
             convertButton.disabled = false;
         }
