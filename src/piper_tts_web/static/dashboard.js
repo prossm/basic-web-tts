@@ -495,63 +495,177 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Account dropdown and usage display functions (same as library.js)
+function createAccountDropdown() {
+    // Remove any existing modal
+    const oldModal = document.getElementById('account-modal');
+    if (oldModal) oldModal.remove();
+    // Find the Account link position
+    const accountLinkEl = document.getElementById('account-link');
+    const rect = accountLinkEl.getBoundingClientRect();
+    // Create dropdown
+    const dropdown = document.createElement('div');
+    dropdown.id = 'account-modal';
+    dropdown.className = 'modal';
+    dropdown.style.display = 'none';
+    dropdown.style.position = 'absolute';
+    dropdown.style.top = (window.scrollY + rect.bottom + 8) + 'px';
+    dropdown.style.left = (window.scrollX + rect.right - 240) + 'px'; // right-align
+    dropdown.style.width = '240px';
+    dropdown.style.background = '#fff';
+    dropdown.style.borderRadius = '10px';
+    dropdown.style.boxShadow = '0 4px 24px rgba(0,0,0,0.13)';
+    dropdown.style.zIndex = '1000';
+    dropdown.style.padding = '1.2em 0 0.5em 0';
+    dropdown.innerHTML = `
+      <ul id="account-options" style="list-style:none; padding:0 0 0.5em 0; margin:0;">
+        <li><a href="/library" class="account-link" style="display:block; padding:0.7em 1.5em;">My Library</a></li>
+        <li><a href="/terms" class="account-link" style="display:block; padding:0.7em 1.5em;">Terms of Service</a></li>
+        <li><a href="/privacy" class="account-link" style="display:block; padding:0.7em 1.5em;">Privacy Policy</a></li>
+      </ul>
+      <button id="logout-button" class="btn btn-secondary" style="margin:0.5em 1.5em 0.5em 1.5em; width:calc(100% - 3em);">Log Out</button>
+    `;
+    document.body.appendChild(dropdown);
+    
+    // Close dropdown logic
+    function closeDropdown(e) {
+        if (!dropdown.contains(e.target) && e.target !== accountLinkEl) {
+            dropdown.style.display = 'none';
+            document.removeEventListener('mousedown', closeDropdown);
+        }
+    }
+    setTimeout(() => {
+        document.addEventListener('mousedown', closeDropdown);
+    }, 0);
+    
+    // Logout button functionality
+    const logoutButton = dropdown.querySelector('#logout-button');
+    if (logoutButton) {
+        logoutButton.onclick = async () => {
+            await firebaseAuth.signOut();
+            dropdown.style.display = 'none';
+            window.location.href = '/';
+        };
+    }
+    
+    return dropdown;
+}
+
+function showAccountDropdown() {
+    const dropdown = createAccountDropdown();
+    dropdown.style.display = 'block';
+}
+
+function attachAccountDropdownHandler() {
+    const accountLink = document.getElementById('account-link');
+    if (accountLink) {
+        accountLink.onclick = (e) => {
+            e.preventDefault();
+            showAccountDropdown();
+        };
+    }
+}
+
+function updateAuthUI(user) {
+  const authLinks = document.getElementById('auth-links');
+  const userInfo = document.getElementById('user-info');
+  
+  if (user) {
+    if (authLinks) authLinks.style.display = 'none';
+    if (userInfo) {
+      userInfo.style.display = 'inline';
+      userInfo.innerHTML = '<a href="#" id="account-link" style="font-weight:bold;">Account</a>';
+      attachAccountDropdownHandler();
+      
+      // Initialize usage display for logged in users
+      initializeUsageDisplay();
+    }
+    
+    setupSearchHandlers();
+    loadVoicesForFilter();
+    loadDashboardList();
+  } else {
+    if (authLinks) authLinks.style.display = 'inline';
+    if (userInfo) userInfo.style.display = 'none';
+    dashboardList.innerHTML = '<li>Please log in as a superuser to view the dashboard.</li>';
+  }
+}
+
+// Usage display functions
+async function showUsageInfo() {
+    if (!firebaseAuth || !firebaseAuth.currentUser) {
+        return;
+    }
+
+    try {
+        const firebaseIdToken = await firebaseAuth.currentUser.getIdToken();
+        const response = await fetch('/user-usage', {
+            headers: { 'Authorization': 'Bearer ' + firebaseIdToken }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            updateUsageDisplay(data);
+        }
+    } catch (error) {
+        console.error('Error fetching usage info:', error);
+    }
+}
+
+function updateUsageDisplay(usageData) {
+    // Create or update usage display in the header
+    const existingUsage = document.getElementById('usage-display');
+    if (existingUsage) {
+        existingUsage.remove();
+    }
+    
+    if (!firebaseAuth || !firebaseAuth.currentUser) {
+        return; // Don't show usage for anonymous users
+    }
+    
+    const usage = usageData.usage;
+    const usedMinutes = Math.round(usage.total_duration / 60);
+    const freeMinutes = Math.round(usageData.limits.free_duration / 60);
+    const canGenerate = usageData.can_generate?.can_generate;
+    
+    // Find the user info section to add usage display
+    const userInfo = document.getElementById('user-info');
+    if (userInfo && userInfo.style.display !== 'none') {
+        const usageDisplay = document.createElement('span');
+        usageDisplay.id = 'usage-display';
+        
+        // Set content and CSS class based on state
+        if (usage.recordings_count === 0) {
+            usageDisplay.textContent = 'First file free!';
+            usageDisplay.className = 'first-free';
+        } else if (canGenerate) {
+            usageDisplay.textContent = `${usedMinutes}/${freeMinutes}min used`;
+            usageDisplay.className = 'can-generate';
+        } else {
+            usageDisplay.textContent = 'Upgrade needed';
+            usageDisplay.className = 'upgrade-needed';
+            // Make upgrade needed clickable - redirect to homepage to show paywall
+            usageDisplay.onclick = () => {
+                window.location.href = '/?upgrade=1';
+            };
+        }
+        
+        userInfo.appendChild(usageDisplay);
+        
+        // Add class to body for mobile responsive handling
+        document.body.classList.add('has-usage-display');
+    }
+}
+
+function initializeUsageDisplay() {
+    if (firebaseAuth && firebaseAuth.currentUser) {
+        showUsageInfo();
+    }
+}
+
 (async function() {
   await loadFirebase();
   firebaseAuth.onAuthStateChanged(user => {
-    // Update navigation visibility
-    const authLinks = document.getElementById('auth-links');
-    const userInfo = document.getElementById('user-info');
-    const libraryLink = document.getElementById('library-link');
-    
-    if (user) {
-      if (authLinks) authLinks.style.display = 'none';
-      if (userInfo) {
-        userInfo.style.display = 'inline';
-        userInfo.innerHTML = `
-          <div style="position:relative; display:inline-block;">
-            <span style="cursor:pointer; color:#222; font-weight:500;" id="account-dropdown-trigger">
-              Account <span style="font-size:0.8em;">▼</span>
-            </span>
-            <div id="account-dropdown" style="display:none; position:absolute; top:100%; right:0; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 2px 8px rgba(0,0,0,0.1); min-width:140px; z-index:1000; margin-top:5px;">
-              <a href="/library" style="display:block; padding:0.5em 1em; text-decoration:none; color:#333; border-bottom:1px solid #eee;">My Library</a>
-              <a href="#" id="logout-link" style="display:block; padding:0.5em 1em; text-decoration:none; color:#333;">Log Out</a>
-            </div>
-          </div>
-        `;
-        
-        // Account dropdown functionality
-        const trigger = document.getElementById('account-dropdown-trigger');
-        const dropdown = document.getElementById('account-dropdown');
-        const logoutLink = document.getElementById('logout-link');
-        
-        if (trigger && dropdown) {
-          trigger.onclick = (e) => {
-            e.stopPropagation();
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-          };
-          
-          document.addEventListener('click', () => {
-            dropdown.style.display = 'none';
-          });
-        }
-        
-        if (logoutLink) {
-          logoutLink.onclick = (e) => {
-            e.preventDefault();
-            firebaseAuth.signOut();
-          };
-        }
-      }
-      if (libraryLink) libraryLink.style.display = 'inline';
-      
-      setupSearchHandlers();
-      loadVoicesForFilter();
-      loadDashboardList();
-    } else {
-      if (authLinks) authLinks.style.display = 'inline';
-      if (userInfo) userInfo.style.display = 'none';
-      if (libraryLink) libraryLink.style.display = 'none';
-      dashboardList.innerHTML = '<li>Please log in as a superuser to view the dashboard.</li>';
-    }
+    updateAuthUI(user);
   });
 })();

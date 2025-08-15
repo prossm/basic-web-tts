@@ -73,14 +73,36 @@ header nav {
     padding: 1rem var(--spacing-lg) !important;
 }
 
+/* Header navigation links */
 header nav a {
     transition: all 0.3s ease;
     border-radius: var(--border-radius-sm);
     padding: 0.5rem 1rem;
+    color: var(--text-primary) !important;
+    text-decoration: none !important;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 header nav a:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Auth links styling */
+#auth-links a {
+    color: var(--text-primary) !important;
+    text-decoration: none !important;
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--border-radius-sm);
+    transition: all 0.3s ease;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+#auth-links a:hover {
+    background: rgba(255, 255, 255, 0.3);
     transform: translateY(-1px);
 }
 
@@ -453,6 +475,73 @@ audio {
     background: rgba(255, 255, 255, 0.2) !important;
     transform: scale(1.1) !important;
     color: var(--text-primary) !important;
+}
+
+/* Usage display styling */
+#usage-display {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    margin-left: 1rem;
+    transition: all 0.3s ease;
+    cursor: default;
+    text-shadow: none;
+}
+
+#usage-display.can-generate {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success-color);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+#usage-display.upgrade-needed {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error-color);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    cursor: pointer;
+}
+
+#usage-display.upgrade-needed:hover {
+    background: rgba(239, 68, 68, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+#usage-display.first-free {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--primary-color);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* Mobile usage display - moves below header */
+@media (max-width: 768px) {
+    #usage-display {
+        position: fixed;
+        top: 70px; /* Below header */
+        right: 1rem;
+        z-index: 99;
+        margin-left: 0;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+    
+    /* Adjust header padding on mobile when usage display is present */
+    body.has-usage-display {
+        padding-top: 50px;
+    }
+}
+
+/* Account dropdown improvements */
+#account-dropdown, #account-modal {
+    max-height: 300px !important;
+    overflow-y: auto;
+    min-height: auto !important;
+    height: auto !important;
 }
 
 /* Responsive Design */

@@ -735,9 +735,18 @@ document.addEventListener('DOMContentLoaded', function() {
         firebaseUser = user;
         updateAuthUI(user);
         setTimeout(() => checkSuperuserAndShowDashboardLink(user), 0);
-        // After everything is ready, show library if at /library
-        if (window.location.pathname === '/library') {
-            // This logic is now handled by the library page's JS
+        
+        // Check for upgrade URL parameter and show paywall
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('upgrade') === '1' && user) {
+          // Show paywall for upgrade request
+          setTimeout(() => {
+            showPaywall({
+              error: 'usage_limit_exceeded',
+              message: "You've reached your free usage limit. Please upgrade to continue.",
+              usage: { used_duration: 900, free_duration: 900, recordings_count: 20 }
+            });
+          }, 1000);
         }
       });
       await checkMagicLink();
@@ -1256,22 +1265,31 @@ function updateUsageDisplay(usageData) {
     if (userInfo && userInfo.style.display !== 'none') {
         const usageDisplay = document.createElement('span');
         usageDisplay.id = 'usage-display';
-        usageDisplay.style.cssText = `
-            margin-left: 1em;
-            font-size: 0.9em;
-            color: ${canGenerate ? '#666' : '#d9534f'};
-            font-weight: 500;
-        `;
         
+        // Set content and CSS class based on state
         if (usage.recordings_count === 0) {
             usageDisplay.textContent = 'First file free!';
+            usageDisplay.className = 'first-free';
         } else if (canGenerate) {
             usageDisplay.textContent = `${usedMinutes}/${freeMinutes}min used`;
+            usageDisplay.className = 'can-generate';
         } else {
             usageDisplay.textContent = 'Upgrade needed';
+            usageDisplay.className = 'upgrade-needed';
+            // Make upgrade needed clickable
+            usageDisplay.onclick = () => {
+                showPaywall({
+                    error: 'usage_limit_exceeded',
+                    message: "You've reached your free usage limit. Please upgrade to continue.",
+                    usage: usage
+                });
+            };
         }
         
         userInfo.appendChild(usageDisplay);
+        
+        // Add class to body for mobile responsive handling
+        document.body.classList.add('has-usage-display');
     }
 }
 
