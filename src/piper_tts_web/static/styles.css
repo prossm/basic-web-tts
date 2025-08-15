@@ -499,16 +499,16 @@ audio {
 }
 
 #usage-display.upgrade-needed {
-    background: rgba(239, 68, 68, 0.15);
-    color: var(--error-color);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: #ef4444;
+    color: white;
+    border: 1px solid #dc2626;
     cursor: pointer;
 }
 
 #usage-display.upgrade-needed:hover {
-    background: rgba(239, 68, 68, 0.25);
+    background: #dc2626;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
 
 #usage-display.first-free {
@@ -528,11 +528,6 @@ audio {
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-    }
-    
-    /* Adjust header padding on mobile when usage display is present */
-    body.has-usage-display {
-        padding-top: 50px;
     }
 }
 
