@@ -175,7 +175,7 @@ function showPlayModal(recording, autoPlay = false, errorMsg = null) {
   modalContent.style.background = 'rgba(255, 255, 255, 0.25)';
   modalContent.style.backdropFilter = 'blur(40px) saturate(180%)';
   modalContent.style.webkitBackdropFilter = 'blur(40px) saturate(180%)';
-  modalContent.style.padding = '2rem';
+  modalContent.style.padding = '2.5rem';
   modalContent.style.borderRadius = '24px';
   modalContent.style.maxWidth = '640px';
   modalContent.style.width = '90%';
@@ -208,7 +208,7 @@ function showPlayModal(recording, autoPlay = false, errorMsg = null) {
       <!-- Metadata above player -->
       <div style="text-align:center; margin-bottom:2rem; position: relative;">
         <!-- Gradient spotlight background -->
-        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 300px; height: 120px; background: radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 40%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: -1; animation: fadeInSpotlight 0.8s ease-out;"></div>
+        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 320px; height: 140px; background: radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 40%, rgba(255,255,255,0) 70%); border-radius: 50%; z-index: -1; animation: fadeInSpotlight 0.8s ease-out;"></div>
         
         <h3 style="margin-bottom:1rem; font-size:1.3rem; font-weight:600; color:#0f172a; text-shadow: 0 1px 2px rgba(255,255,255,0.8); position: relative; z-index: 1;">${voiceStr}</h3>
         <div style="margin-bottom:0.5rem; color:#1e293b; font-size:0.9rem; font-weight:500; text-shadow: 0 1px 1px rgba(255,255,255,0.6); position: relative; z-index: 1;">${dateStr}${durationStr ? ' • ' + durationStr : ''}</div>
