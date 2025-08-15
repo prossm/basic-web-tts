@@ -175,7 +175,7 @@ function showPlayModal(recording, autoPlay = false, errorMsg = null) {
   modalContent.style.background = 'rgba(255, 255, 255, 0.25)';
   modalContent.style.backdropFilter = 'blur(40px) saturate(180%)';
   modalContent.style.webkitBackdropFilter = 'blur(40px) saturate(180%)';
-  modalContent.style.padding = '2.5rem';
+  modalContent.style.padding = '2.5rem 3.5rem';
   modalContent.style.borderRadius = '24px';
   modalContent.style.maxWidth = '640px';
   modalContent.style.width = '90%';
