@@ -857,6 +857,8 @@ function showPaywall(errorDetails) {
         position: fixed;
         top: 0;
         left: 0;
+        right: 0;
+        bottom: 0;
         width: 100vw;
         height: 100vh;
         background: rgba(0,0,0,0.5);
@@ -864,6 +866,10 @@ function showPaywall(errorDetails) {
         display: flex;
         align-items: center;
         justify-content: center;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box;
+        overflow: hidden;
     `;
 
     const usage = errorDetails.usage || {};
@@ -1172,6 +1178,8 @@ function showPurchaseSuccess() {
         position: fixed;
         top: 0;
         left: 0;
+        right: 0;
+        bottom: 0;
         width: 100vw;
         height: 100vh;
         background: rgba(0,0,0,0.5);
@@ -1179,6 +1187,10 @@ function showPurchaseSuccess() {
         display: flex;
         align-items: center;
         justify-content: center;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box;
+        overflow: hidden;
     `;
 
     modal.innerHTML = `
