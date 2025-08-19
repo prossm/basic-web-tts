@@ -89,4 +89,4 @@ Use RevenueCat's sandbox environment for testing purchases without real charges.
 - The integration gracefully falls back to placeholder functionality if RevenueCat SDK fails to load
 - Usage is tracked by audio duration (calculated using Python's wave module)
 - Deleted recordings are excluded from usage calculations
-- Anonymous users get no free usage beyond the first file (login required)
+- Anonymous users get no free usage beyond the first file (login required)1

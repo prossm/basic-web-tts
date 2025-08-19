@@ -414,6 +414,9 @@ audio {
     align-items: center;
     justify-content: center;
     animation: fadeIn 0.3s ease;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 @keyframes fadeIn {
@@ -433,7 +436,7 @@ audio {
     border-radius: var(--border-radius-lg);
     max-width: 480px;
     width: 90%;
-    margin: auto;
+    margin: 0;
     position: relative;
     box-shadow: var(--glass-shadow);
     border: 1px solid var(--glass-border);
@@ -582,9 +585,9 @@ audio {
     }
     
     .modal-content {
-        margin: 1rem;
+        margin: 0;
         padding: 1.5rem;
-        max-width: none;
+        max-width: calc(100vw - 2rem);
         width: calc(100% - 2rem);
     }
 }
@@ -610,8 +613,9 @@ audio {
     }
     
     .modal-content {
-        margin: 0.5rem;
+        margin: 0;
         width: calc(100% - 1rem);
+        max-width: calc(100vw - 1rem);
     }
 }
 
