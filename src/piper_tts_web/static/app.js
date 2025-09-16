@@ -1092,9 +1092,21 @@ function setupActualPurchaseFlow() {
                     console.log('Found premium_monthly offering');
                     const premiumOffering = offerings.all['premium_monthly'];
                     console.log('Premium offering structure:', premiumOffering);
-                    console.log('Available packages in premium_monthly:', Object.keys(premiumOffering));
+                    const offeringKeys = Object.keys(premiumOffering);
+                    console.log('Available packages in premium_monthly:', offeringKeys);
+                    console.log('Looking for $rc_monthly in:', offeringKeys);
                     packageToPurchase = premiumOffering['$rc_monthly'];
                     console.log('Found $rc_monthly package:', packageToPurchase);
+
+                    // If $rc_monthly not found, let's see what packages ARE available
+                    if (!packageToPurchase) {
+                        console.log('$rc_monthly not found, checking availablePackages array:');
+                        console.log('availablePackages:', premiumOffering.availablePackages);
+                        if (premiumOffering.availablePackages && premiumOffering.availablePackages.length > 0) {
+                            console.log('First available package:', premiumOffering.availablePackages[0]);
+                            packageToPurchase = premiumOffering.availablePackages[0];
+                        }
+                    }
                 }
                 // Fallback to current offering
                 else if (offerings.current && offerings.current['$rc_monthly']) {
