@@ -1082,11 +1082,11 @@ function setupActualPurchaseFlow() {
                 // Try to find the premium_monthly offering
                 if (offerings.all && offerings.all['premium_monthly']) {
                     const premiumOffering = offerings.all['premium_monthly'];
-                    packageToPurchase = premiumOffering.monthly;
-                } 
+                    packageToPurchase = premiumOffering['$rc_monthly'];
+                }
                 // Fallback to current offering
-                else if (offerings.current && offerings.current.monthly) {
-                    packageToPurchase = offerings.current.monthly;
+                else if (offerings.current && offerings.current['$rc_monthly']) {
+                    packageToPurchase = offerings.current['$rc_monthly'];
                 }
                 // Last resort - any available package
                 else if (offerings.current && offerings.current.availablePackages.length > 0) {
