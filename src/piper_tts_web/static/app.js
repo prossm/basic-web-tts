@@ -853,23 +853,10 @@ function showPaywall(errorDetails) {
 
     const modal = document.createElement('div');
     modal.id = 'paywall-modal';
+    modal.className = 'modal';
     modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0,0,0,0.5);
-        z-index: 2000;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box;
-        overflow: hidden;
+        z-index: 2000;
     `;
 
     const usage = errorDetails.usage || {};
