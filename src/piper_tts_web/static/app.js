@@ -1076,21 +1076,41 @@ function setupActualPurchaseFlow() {
                 console.log('Available offerings:', offerings);
                 console.log('Offerings.all:', offerings.all);
                 console.log('Offerings.current:', offerings.current);
+
+                // Debug: log the structure in detail
+                console.log('All offering keys:', Object.keys(offerings.all || {}));
+                if (offerings.current) {
+                    console.log('Current offering identifier:', offerings.current.identifier);
+                    console.log('Current offering keys:', Object.keys(offerings.current));
+                    console.log('Available packages in current:', offerings.current.availablePackages);
+                }
                 
                 let packageToPurchase = null;
                 
                 // Try to find the premium_monthly offering
                 if (offerings.all && offerings.all['premium_monthly']) {
+                    console.log('Found premium_monthly offering');
                     const premiumOffering = offerings.all['premium_monthly'];
+                    console.log('Premium offering structure:', premiumOffering);
+                    console.log('Available packages in premium_monthly:', Object.keys(premiumOffering));
                     packageToPurchase = premiumOffering['$rc_monthly'];
+                    console.log('Found $rc_monthly package:', packageToPurchase);
                 }
                 // Fallback to current offering
                 else if (offerings.current && offerings.current['$rc_monthly']) {
+                    console.log('Looking for $rc_monthly in current offering');
                     packageToPurchase = offerings.current['$rc_monthly'];
+                    console.log('Found $rc_monthly in current:', packageToPurchase);
                 }
                 // Last resort - any available package
-                else if (offerings.current && offerings.current.availablePackages.length > 0) {
+                else if (offerings.current && offerings.current.availablePackages && offerings.current.availablePackages.length > 0) {
+                    console.log('Using first available package from availablePackages');
                     packageToPurchase = offerings.current.availablePackages[0];
+                    console.log('First available package:', packageToPurchase);
+                } else {
+                    console.log('No packages found in any location');
+                    console.log('offerings.all keys:', Object.keys(offerings.all || {}));
+                    console.log('offerings.current:', offerings.current);
                 }
                 
                 if (packageToPurchase) {
