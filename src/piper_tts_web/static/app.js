@@ -1231,32 +1231,35 @@ async function showPaymentForm(packageToPurchase) {
         paywallModal.remove();
     };
 
-    // Set up timeout to hide loading spinner and show payment button
-    setTimeout(() => {
-        // Hide loading spinner
-        const loadingSpinner = document.getElementById('loading-spinner');
-        if (loadingSpinner) {
-            loadingSpinner.style.display = 'none';
+    // Start RevenueCat purchase immediately to create Stripe form
+    let purchasePromise;
+    try {
+        console.log('Starting RevenueCat purchase flow to create payment form...');
+
+        if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
+            purchasePromise = window.PurchasesInstance.purchasePackage(packageToPurchase);
+        } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
+            purchasePromise = window.Purchases.Purchases.purchasePackage(packageToPurchase);
+        } else if (typeof window.Purchases.purchasePackage === 'function') {
+            purchasePromise = window.Purchases.purchasePackage(packageToPurchase);
+        } else {
+            throw new Error('No valid purchasePackage method found');
         }
 
-        // Show payment form area
-        const paymentElement = document.getElementById('payment-element');
-        if (paymentElement) {
-            paymentElement.style.display = 'block';
-            paymentElement.innerHTML = `
-                <div style="
-                    border: 2px dashed #007AFF;
-                    border-radius: 8px;
-                    padding: 2em;
-                    text-align: center;
-                    color: #007AFF;
-                    background: #f0f8ff;
-                ">
-                    <p style="margin: 0; font-weight: 500;">Ready to complete your purchase</p>
-                    <p style="font-size: 0.9em; margin: 0.5em 0 0 0; color: #666;">Secure payment powered by Stripe</p>
-                </div>
-            `;
-        }
+        // Show loading for a bit, then hide spinner and show form area
+        setTimeout(() => {
+            // Hide loading spinner
+            const loadingSpinner = document.getElementById('loading-spinner');
+            if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
+
+            // Show payment form area - Stripe elements should appear here automatically
+            const paymentElement = document.getElementById('payment-element');
+            if (paymentElement) {
+                paymentElement.style.display = 'block';
+                // Don't add placeholder content - let Stripe/RevenueCat populate this
+            }
 
         // Enable purchase button
         const completeButton = document.getElementById('complete-purchase');
@@ -1298,20 +1301,10 @@ async function showPaymentForm(packageToPurchase) {
                 `;
 
                 try {
-                    console.log('Starting RevenueCat purchase...');
+                    console.log('Awaiting purchase completion...');
 
-                    // Now call RevenueCat when user is ready
-                    let purchaseResult;
-                    if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
-                        purchaseResult = await window.PurchasesInstance.purchasePackage(packageToPurchase);
-                    } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
-                        purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
-                    } else if (typeof window.Purchases.purchasePackage === 'function') {
-                        purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
-                    } else {
-                        throw new Error('No valid purchasePackage method found');
-                    }
-
+                    // Await the purchase that was already started
+                    const purchaseResult = await purchasePromise;
                     console.log('Purchase completed:', purchaseResult);
 
                     if (purchaseResult.customerInfo.entitlements.active['premium']) {
@@ -1371,6 +1364,44 @@ async function showPaymentForm(packageToPurchase) {
             }
         }
     }, 1500); // Show loading for 1.5 seconds
+
+    } catch (initError) {
+        console.error('Error initializing purchase:', initError);
+
+        // Hide loading spinner and show error
+        setTimeout(() => {
+            const loadingSpinner = document.getElementById('loading-spinner');
+            if (loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
+
+            const paymentElement = document.getElementById('payment-element');
+            if (paymentElement) {
+                paymentElement.style.display = 'block';
+                paymentElement.innerHTML = `
+                    <div style="
+                        border: 2px solid #e74c3c;
+                        border-radius: 8px;
+                        padding: 2em;
+                        text-align: center;
+                        color: #e74c3c;
+                        background: #fdf2f2;
+                    ">
+                        <p style="margin: 0;">Failed to initialize payment form</p>
+                        <p style="font-size: 0.9em; margin: 0.5em 0 0 0; color: #666;">Please try again or contact support</p>
+                    </div>
+                `;
+            }
+
+            const completeButton = document.getElementById('complete-purchase');
+            if (completeButton) {
+                completeButton.textContent = 'Retry';
+                completeButton.disabled = false;
+                completeButton.style.opacity = '1';
+                completeButton.onclick = () => showPaymentForm(packageToPurchase);
+            }
+        }, 1000);
+    }
 }
 
 function showPurchaseSuccess() {
