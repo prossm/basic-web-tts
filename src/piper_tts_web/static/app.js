@@ -1232,12 +1232,39 @@ async function showPaymentForm(packageToPurchase) {
     };
 
     try {
-        // Simulate loading time then initiate RevenueCat web billing purchase
+        // Actually initiate RevenueCat web billing purchase during loading
         setTimeout(async () => {
             try {
-                // Hide loading spinner, show payment form
+                console.log('Initiating RevenueCat purchase flow...');
+
+                // Start the RevenueCat purchase process - this should create Stripe elements
+                let purchasePromise;
+                if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
+                    purchasePromise = window.PurchasesInstance.purchasePackage(packageToPurchase);
+                } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
+                    purchasePromise = window.Purchases.Purchases.purchasePackage(packageToPurchase);
+                } else if (typeof window.Purchases.purchasePackage === 'function') {
+                    purchasePromise = window.Purchases.purchasePackage(packageToPurchase);
+                } else {
+                    throw new Error('No valid purchasePackage method found');
+                }
+
+                // Hide loading spinner, show payment form area
                 document.getElementById('loading-spinner').style.display = 'none';
                 document.getElementById('payment-element').style.display = 'block';
+                document.getElementById('payment-element').innerHTML = `
+                    <div style="
+                        border: 2px dashed #ddd;
+                        border-radius: 8px;
+                        padding: 2em;
+                        text-align: center;
+                        color: #666;
+                        background: #f9f9f9;
+                    ">
+                        <p>Payment form will appear here when you click "Complete Purchase"</p>
+                        <p style="font-size: 0.9em; margin-top: 0.5em;">Secure payment powered by Stripe</p>
+                    </div>
+                `;
 
                 // Enable purchase button
                 const completeButton = document.getElementById('complete-purchase');
@@ -1251,18 +1278,20 @@ async function showPaymentForm(packageToPurchase) {
                     completeButton.disabled = true;
                     completeButton.style.opacity = '0.5';
 
+                    // Replace placeholder with loading message
+                    document.getElementById('payment-element').innerHTML = `
+                        <div style="
+                            padding: 2em;
+                            text-align: center;
+                            color: #666;
+                        ">
+                            <p>Opening secure payment form...</p>
+                        </div>
+                    `;
+
                     try {
-                        // Initiate RevenueCat web billing purchase
-                        let purchaseResult;
-                        if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
-                            purchaseResult = await window.PurchasesInstance.purchasePackage(packageToPurchase);
-                        } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
-                            purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
-                        } else if (typeof window.Purchases.purchasePackage === 'function') {
-                            purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
-                        } else {
-                            throw new Error('No valid purchasePackage method found');
-                        }
+                        console.log('Awaiting purchase result...');
+                        const purchaseResult = await purchasePromise;
 
                         console.log('Purchase result:', purchaseResult);
 
@@ -1295,6 +1324,21 @@ async function showPaymentForm(packageToPurchase) {
                             }
                         }
 
+                        // Reset payment form
+                        document.getElementById('payment-element').innerHTML = `
+                            <div style="
+                                border: 2px dashed #ddd;
+                                border-radius: 8px;
+                                padding: 2em;
+                                text-align: center;
+                                color: #666;
+                                background: #f9f9f9;
+                            ">
+                                <p>Ready to try again</p>
+                                <p style="font-size: 0.9em; margin-top: 0.5em;">Secure payment powered by Stripe</p>
+                            </div>
+                        `;
+
                         // Reset button
                         completeButton.textContent = 'Try Again';
                         completeButton.disabled = false;
@@ -1321,7 +1365,7 @@ async function showPaymentForm(packageToPurchase) {
                 completeButton.style.opacity = '1';
                 completeButton.onclick = () => showPaymentForm(packageToPurchase);
             }
-        }, 1500); // Simulate loading time for better UX
+        }, 1000); // Reduced loading time
 
     } catch (error) {
         console.error('Payment form initialization error:', error);
