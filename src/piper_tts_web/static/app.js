@@ -851,6 +851,12 @@ function showPaywall(errorDetails) {
         existingPaywall.remove();
     }
 
+    // Also remove any existing payment modals to prevent ID conflicts
+    const existingPaymentModal = document.querySelector('[id^="paywall-modal"]');
+    if (existingPaymentModal) {
+        existingPaymentModal.remove();
+    }
+
     const modal = document.createElement('div');
     modal.id = 'paywall-modal';
     modal.className = 'modal';
@@ -1237,14 +1243,19 @@ async function showPaymentForm(packageToPurchase) {
         console.log('Starting RevenueCat purchase flow to create payment form...');
 
         if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
+            console.log('Using PurchasesInstance.purchasePackage');
             purchasePromise = window.PurchasesInstance.purchasePackage(packageToPurchase);
         } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
+            console.log('Using Purchases.Purchases.purchasePackage');
             purchasePromise = window.Purchases.Purchases.purchasePackage(packageToPurchase);
         } else if (typeof window.Purchases.purchasePackage === 'function') {
+            console.log('Using Purchases.purchasePackage');
             purchasePromise = window.Purchases.purchasePackage(packageToPurchase);
         } else {
             throw new Error('No valid purchasePackage method found');
         }
+
+        console.log('Purchase promise created:', purchasePromise);
 
         // Show loading for a bit, then hide spinner and show form area
         setTimeout(() => {
@@ -1303,8 +1314,13 @@ async function showPaymentForm(packageToPurchase) {
                 try {
                     console.log('Awaiting purchase completion...');
 
-                    // Await the purchase that was already started
-                    const purchaseResult = await purchasePromise;
+                    // Add timeout to prevent infinite hanging
+                    const purchaseTimeout = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Purchase timeout after 5 minutes')), 5 * 60 * 1000);
+                    });
+
+                    // Race between purchase completion and timeout
+                    const purchaseResult = await Promise.race([purchasePromise, purchaseTimeout]);
                     console.log('Purchase completed:', purchaseResult);
 
                     if (purchaseResult.customerInfo.entitlements.active['premium']) {
