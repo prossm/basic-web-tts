@@ -1099,43 +1099,9 @@ function setupActualPurchaseFlow() {
                 
                 if (packageToPurchase) {
                     console.log('Purchasing package:', packageToPurchase);
-                    
-                    // Purchase the package - try different formats
-                    let purchaseResult;
-                    if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
-                        purchaseResult = await window.PurchasesInstance.purchasePackage(packageToPurchase);
-                        console.log('Purchased via PurchasesInstance');
-                    } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
-                        purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
-                        console.log('Purchased via nested Purchases');
-                    } else if (typeof window.Purchases.purchasePackage === 'function') {
-                        purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
-                        console.log('Purchased via direct Purchases');
-                    } else {
-                        throw new Error('No valid purchasePackage method found');
-                    }
-                    
-                    console.log('Purchase result:', purchaseResult);
-                    
-                    if (purchaseResult.customerInfo.entitlements.active['premium']) {
-                        // Purchase successful
-                        console.log('Purchase successful!');
-                        
-                        // Close paywall modal
-                        const paywallModal = document.getElementById('paywall-modal');
-                        if (paywallModal) {
-                            paywallModal.remove();
-                        }
-                        
-                        // Show success message
-                        showPurchaseSuccess();
-                        
-                        // Refresh user usage status
-                        await checkSubscriptionStatus();
-                        
-                    } else {
-                        throw new Error('Purchase completed but entitlement not found');
-                    }
+
+                    // Show payment form instead of directly purchasing
+                    await showPaymentForm(packageToPurchase);
                 } else {
                     throw new Error('No packages available for purchase');
                 }
@@ -1166,6 +1132,123 @@ function setupPlaceholderPurchase() {
         purchaseButton.onclick = () => {
             alert('Subscription functionality coming soon! Please check back later.');
         };
+    }
+}
+
+async function showPaymentForm(packageToPurchase) {
+    console.log('Showing payment form for package:', packageToPurchase);
+
+    // Replace the paywall content with payment form
+    const paywallModal = document.getElementById('paywall-modal');
+    if (!paywallModal) return;
+
+    paywallModal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 2em;
+            border-radius: 12px;
+            max-width: 500px;
+            margin: 2em;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        ">
+            <h2 style="color: #333; margin-bottom: 1em;">Complete Your Purchase</h2>
+            <p style="color: #666; margin-bottom: 1.5em;">
+                Unlimited Audio Generation - $4.99/month
+            </p>
+
+            <div id="payment-form-container" style="margin: 2em 0; text-align: left;">
+                <div id="payment-element">
+                    <!-- Stripe payment form will be inserted here -->
+                </div>
+                <div id="payment-errors" style="color: #e74c3c; margin-top: 1em; text-align: center;"></div>
+            </div>
+
+            <div style="margin-top: 2em;">
+                <button id="complete-purchase" style="
+                    background: #007AFF;
+                    color: white;
+                    padding: 1em 2em;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    width: 100%;
+                    margin-bottom: 1em;
+                " disabled>
+                    Processing...
+                </button>
+
+                <button id="cancel-purchase" style="
+                    background: #f0f0f0;
+                    border: none;
+                    padding: 0.8em 1.5em;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    color: #666;
+                ">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Set up cancel button
+    document.getElementById('cancel-purchase').onclick = () => {
+        paywallModal.remove();
+    };
+
+    try {
+        // Initiate RevenueCat web billing purchase
+        let purchaseResult;
+        if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
+            purchaseResult = await window.PurchasesInstance.purchasePackage(packageToPurchase);
+        } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
+            purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
+        } else if (typeof window.Purchases.purchasePackage === 'function') {
+            purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
+        } else {
+            throw new Error('No valid purchasePackage method found');
+        }
+
+        console.log('Purchase result:', purchaseResult);
+
+        if (purchaseResult.customerInfo.entitlements.active['premium']) {
+            // Purchase successful
+            console.log('Purchase successful!');
+
+            // Close paywall modal
+            paywallModal.remove();
+
+            // Show success message
+            showPurchaseSuccess();
+
+            // Refresh user usage status
+            await checkSubscriptionStatus();
+        } else {
+            throw new Error('Purchase completed but entitlement not found');
+        }
+
+    } catch (error) {
+        console.error('Payment form error:', error);
+
+        // Show error in payment form
+        const errorElement = document.getElementById('payment-errors');
+        if (errorElement) {
+            if (error.userCancelled) {
+                errorElement.textContent = 'Payment was cancelled.';
+            } else {
+                errorElement.textContent = 'Payment failed. Please try again.';
+            }
+        }
+
+        // Reset button
+        const completeButton = document.getElementById('complete-purchase');
+        if (completeButton) {
+            completeButton.textContent = 'Try Again';
+            completeButton.disabled = false;
+            completeButton.onclick = () => showPaymentForm(packageToPurchase);
+        }
     }
 }
 
