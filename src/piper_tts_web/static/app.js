@@ -1268,8 +1268,10 @@ async function showPaymentForm(packageToPurchase) {
             completeButton.textContent = 'Complete Purchase - $4.99/month';
             console.log('Button enabled and text set');
 
-            // Set up purchase button handler
-            completeButton.onclick = async () => {
+            try {
+                // Set up purchase button handler
+                console.log('Setting up click handler...');
+                completeButton.onclick = async () => {
                 console.log('Complete Purchase button clicked!');
                 completeButton.textContent = 'Processing Payment...';
                 completeButton.disabled = true;
@@ -1362,6 +1364,11 @@ async function showPaymentForm(packageToPurchase) {
                     completeButton.style.opacity = '1';
                 }
             };
+            console.log('Click handler set up successfully');
+
+            } catch (setupError) {
+                console.error('Error setting up click handler:', setupError);
+            }
         }
     }, 1500); // Show loading for 1.5 seconds
 }
