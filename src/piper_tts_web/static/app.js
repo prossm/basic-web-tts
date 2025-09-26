@@ -1057,10 +1057,6 @@ function setupActualPurchaseFlow() {
     if (purchaseButton) {
         purchaseButton.onclick = async () => {
             try {
-                // Show loading state
-                purchaseButton.textContent = 'Processing...';
-                purchaseButton.style.pointerEvents = 'none';
-                
                 // Get available offerings - try different formats
                 let offerings;
                 if (window.PurchasesInstance && typeof window.PurchasesInstance.getOfferings === 'function') {
@@ -1109,11 +1105,7 @@ function setupActualPurchaseFlow() {
                 console.error('Purchase failed:', error);
                 console.error('Error details:', error.message);
                 console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-                
-                // Reset button state
-                purchaseButton.textContent = 'Upgrade Now - $4.99/month';
-                purchaseButton.style.pointerEvents = 'auto';
-                
+
                 // Show error message
                 if (error.userCancelled) {
                     console.log('User cancelled purchase');
@@ -1142,29 +1134,69 @@ async function showPaymentForm(packageToPurchase) {
     const paywallModal = document.getElementById('paywall-modal');
     if (!paywallModal) return;
 
+    // Create stable-sized payment form with loading state
     paywallModal.innerHTML = `
         <div style="
             background: white;
             padding: 2em;
             border-radius: 12px;
-            max-width: 500px;
+            width: 500px;
+            min-height: 600px;
             margin: 2em;
             text-align: center;
             box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
         ">
-            <h2 style="color: #333; margin-bottom: 1em;">Complete Your Purchase</h2>
-            <p style="color: #666; margin-bottom: 1.5em;">
+            <h2 style="color: #333; margin-bottom: 1em; flex-shrink: 0;">Complete Your Purchase</h2>
+            <p style="color: #666; margin-bottom: 1.5em; flex-shrink: 0;">
                 Unlimited Audio Generation - $4.99/month
             </p>
 
-            <div id="payment-form-container" style="margin: 2em 0; text-align: left;">
-                <div id="payment-element">
+            <div id="payment-form-container" style="
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                margin: 2em 0;
+                position: relative;
+            ">
+                <div id="loading-spinner" style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <svg width="48" height="48" viewBox="0 0 24 24" style="margin-bottom: 1em;">
+                        <circle cx="12" cy="12" r="10" stroke="#007AFF" stroke-width="2" fill="none"
+                                stroke-dasharray="62.83" stroke-dashoffset="62.83">
+                            <animate attributeName="stroke-dashoffset"
+                                     values="62.83;0;62.83"
+                                     dur="2s"
+                                     repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                    <p style="color: #666; margin: 0;">Loading payment form...</p>
+                </div>
+
+                <div id="payment-element" style="
+                    display: none;
+                    width: 100%;
+                    text-align: left;
+                ">
                     <!-- Stripe payment form will be inserted here -->
                 </div>
-                <div id="payment-errors" style="color: #e74c3c; margin-top: 1em; text-align: center;"></div>
+
+                <div id="payment-errors" style="
+                    color: #e74c3c;
+                    margin-top: 1em;
+                    text-align: center;
+                    min-height: 1.5em;
+                "></div>
             </div>
 
-            <div style="margin-top: 2em;">
+            <div style="flex-shrink: 0;">
                 <button id="complete-purchase" style="
                     background: #007AFF;
                     color: white;
@@ -1175,8 +1207,9 @@ async function showPaymentForm(packageToPurchase) {
                     font-weight: 500;
                     width: 100%;
                     margin-bottom: 1em;
+                    opacity: 0.5;
                 " disabled>
-                    Processing...
+                    Complete Purchase
                 </button>
 
                 <button id="cancel-purchase" style="
@@ -1199,55 +1232,107 @@ async function showPaymentForm(packageToPurchase) {
     };
 
     try {
-        // Initiate RevenueCat web billing purchase
-        let purchaseResult;
-        if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
-            purchaseResult = await window.PurchasesInstance.purchasePackage(packageToPurchase);
-        } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
-            purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
-        } else if (typeof window.Purchases.purchasePackage === 'function') {
-            purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
-        } else {
-            throw new Error('No valid purchasePackage method found');
-        }
+        // Simulate loading time then initiate RevenueCat web billing purchase
+        setTimeout(async () => {
+            try {
+                // Hide loading spinner, show payment form
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('payment-element').style.display = 'block';
 
-        console.log('Purchase result:', purchaseResult);
+                // Enable purchase button
+                const completeButton = document.getElementById('complete-purchase');
+                completeButton.disabled = false;
+                completeButton.style.opacity = '1';
+                completeButton.textContent = 'Complete Purchase - $4.99/month';
 
-        if (purchaseResult.customerInfo.entitlements.active['premium']) {
-            // Purchase successful
-            console.log('Purchase successful!');
+                // Set up purchase button handler
+                completeButton.onclick = async () => {
+                    completeButton.textContent = 'Processing...';
+                    completeButton.disabled = true;
+                    completeButton.style.opacity = '0.5';
 
-            // Close paywall modal
-            paywallModal.remove();
+                    try {
+                        // Initiate RevenueCat web billing purchase
+                        let purchaseResult;
+                        if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
+                            purchaseResult = await window.PurchasesInstance.purchasePackage(packageToPurchase);
+                        } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
+                            purchaseResult = await window.Purchases.Purchases.purchasePackage(packageToPurchase);
+                        } else if (typeof window.Purchases.purchasePackage === 'function') {
+                            purchaseResult = await window.Purchases.purchasePackage(packageToPurchase);
+                        } else {
+                            throw new Error('No valid purchasePackage method found');
+                        }
 
-            // Show success message
-            showPurchaseSuccess();
+                        console.log('Purchase result:', purchaseResult);
 
-            // Refresh user usage status
-            await checkSubscriptionStatus();
-        } else {
-            throw new Error('Purchase completed but entitlement not found');
-        }
+                        if (purchaseResult.customerInfo.entitlements.active['premium']) {
+                            // Purchase successful
+                            console.log('Purchase successful!');
+
+                            // Close paywall modal
+                            paywallModal.remove();
+
+                            // Show success message
+                            showPurchaseSuccess();
+
+                            // Refresh user usage status
+                            await checkSubscriptionStatus();
+                        } else {
+                            throw new Error('Purchase completed but entitlement not found');
+                        }
+
+                    } catch (purchaseError) {
+                        console.error('Purchase error:', purchaseError);
+
+                        // Show error
+                        const errorElement = document.getElementById('payment-errors');
+                        if (errorElement) {
+                            if (purchaseError.userCancelled) {
+                                errorElement.textContent = 'Payment was cancelled.';
+                            } else {
+                                errorElement.textContent = 'Payment failed. Please try again.';
+                            }
+                        }
+
+                        // Reset button
+                        completeButton.textContent = 'Try Again';
+                        completeButton.disabled = false;
+                        completeButton.style.opacity = '1';
+                    }
+                };
+
+            } catch (loadError) {
+                console.error('Payment form load error:', loadError);
+
+                // Hide loading spinner
+                document.getElementById('loading-spinner').style.display = 'none';
+
+                // Show error
+                const errorElement = document.getElementById('payment-errors');
+                if (errorElement) {
+                    errorElement.textContent = 'Failed to load payment form. Please try again.';
+                }
+
+                // Show retry button
+                const completeButton = document.getElementById('complete-purchase');
+                completeButton.textContent = 'Retry';
+                completeButton.disabled = false;
+                completeButton.style.opacity = '1';
+                completeButton.onclick = () => showPaymentForm(packageToPurchase);
+            }
+        }, 1500); // Simulate loading time for better UX
 
     } catch (error) {
-        console.error('Payment form error:', error);
+        console.error('Payment form initialization error:', error);
 
-        // Show error in payment form
+        // Hide loading spinner
+        document.getElementById('loading-spinner').style.display = 'none';
+
+        // Show error
         const errorElement = document.getElementById('payment-errors');
         if (errorElement) {
-            if (error.userCancelled) {
-                errorElement.textContent = 'Payment was cancelled.';
-            } else {
-                errorElement.textContent = 'Payment failed. Please try again.';
-            }
-        }
-
-        // Reset button
-        const completeButton = document.getElementById('complete-purchase');
-        if (completeButton) {
-            completeButton.textContent = 'Try Again';
-            completeButton.disabled = false;
-            completeButton.onclick = () => showPaymentForm(packageToPurchase);
+            errorElement.textContent = 'Failed to initialize payment. Please try again.';
         }
     }
 }
