@@ -108,6 +108,13 @@ async def get_firebase_config():
     }
     return config
 
+@app.get("/revenuecat-config")
+async def get_revenuecat_config():
+    config = {
+        "apiKey": REVENUECAT_API_KEY,
+    }
+    return config
+
 # --- Firestore User & Recording Endpoints ---
 from fastapi import Depends, Header
 

@@ -958,8 +958,24 @@ async function initRevenueCatPurchase() {
         console.log('RevenueCat SDK already loaded');
     }
     
-    // Initialize RevenueCat with your public API key
-    const revenueCatApiKey = 'rcb_QKFmTOiOnWADwtcAadurQldsNlNN';
+    // Get RevenueCat API key from backend
+    let revenueCatApiKey;
+    try {
+        const response = await fetch('/revenuecat-config');
+        const config = await response.json();
+        revenueCatApiKey = config.apiKey;
+    } catch (error) {
+        console.error('Failed to fetch RevenueCat config:', error);
+        setupPlaceholderPurchase();
+        return;
+    }
+
+    if (!revenueCatApiKey) {
+        console.error('RevenueCat API key not configured');
+        setupPlaceholderPurchase();
+        return;
+    }
+
     console.log('Configuring RevenueCat with API key:', revenueCatApiKey);
     
     try {
