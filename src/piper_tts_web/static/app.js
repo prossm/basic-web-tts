@@ -1232,151 +1232,88 @@ async function showPaymentForm(packageToPurchase) {
     };
 
     try {
-        // Actually initiate RevenueCat web billing purchase during loading
-        setTimeout(async () => {
-            try {
-                console.log('Initiating RevenueCat purchase flow...');
+        // Start RevenueCat purchase immediately - this should create the Stripe payment form
+        console.log('Initiating RevenueCat purchase flow...');
 
-                // Start the RevenueCat purchase process - this should create Stripe elements
-                let purchasePromise;
-                if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
-                    purchasePromise = window.PurchasesInstance.purchasePackage(packageToPurchase);
-                } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
-                    purchasePromise = window.Purchases.Purchases.purchasePackage(packageToPurchase);
-                } else if (typeof window.Purchases.purchasePackage === 'function') {
-                    purchasePromise = window.Purchases.purchasePackage(packageToPurchase);
-                } else {
-                    throw new Error('No valid purchasePackage method found');
-                }
+        let purchaseResult;
+        if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
+            purchaseResult = window.PurchasesInstance.purchasePackage(packageToPurchase);
+        } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
+            purchaseResult = window.Purchases.Purchases.purchasePackage(packageToPurchase);
+        } else if (typeof window.Purchases.purchasePackage === 'function') {
+            purchaseResult = window.Purchases.purchasePackage(packageToPurchase);
+        } else {
+            throw new Error('No valid purchasePackage method found');
+        }
 
-                // Hide loading spinner, show payment form area
-                document.getElementById('loading-spinner').style.display = 'none';
-                document.getElementById('payment-element').style.display = 'block';
-                document.getElementById('payment-element').innerHTML = `
-                    <div style="
-                        border: 2px dashed #ddd;
-                        border-radius: 8px;
-                        padding: 2em;
-                        text-align: center;
-                        color: #666;
-                        background: #f9f9f9;
-                    ">
-                        <p>Payment form will appear here when you click "Complete Purchase"</p>
-                        <p style="font-size: 0.9em; margin-top: 0.5em;">Secure payment powered by Stripe</p>
-                    </div>
-                `;
+        // Wait for the purchase flow to initialize (payment form should appear)
+        // If successful, this means user completed payment
+        // If cancelled/failed, we handle it in catch
+        const result = await purchaseResult;
 
-                // Enable purchase button
-                const completeButton = document.getElementById('complete-purchase');
-                completeButton.disabled = false;
-                completeButton.style.opacity = '1';
-                completeButton.textContent = 'Complete Purchase - $4.99/month';
+        console.log('Purchase completed:', result);
 
-                // Set up purchase button handler
-                completeButton.onclick = async () => {
-                    completeButton.textContent = 'Processing...';
-                    completeButton.disabled = true;
-                    completeButton.style.opacity = '0.5';
+        if (result.customerInfo.entitlements.active['premium']) {
+            // Purchase successful
+            console.log('Purchase successful!');
 
-                    // Replace placeholder with loading message
-                    document.getElementById('payment-element').innerHTML = `
-                        <div style="
-                            padding: 2em;
-                            text-align: center;
-                            color: #666;
-                        ">
-                            <p>Opening secure payment form...</p>
-                        </div>
-                    `;
+            // Close paywall modal
+            paywallModal.remove();
 
-                    try {
-                        console.log('Awaiting purchase result...');
-                        const purchaseResult = await purchasePromise;
+            // Show success message
+            showPurchaseSuccess();
 
-                        console.log('Purchase result:', purchaseResult);
-
-                        if (purchaseResult.customerInfo.entitlements.active['premium']) {
-                            // Purchase successful
-                            console.log('Purchase successful!');
-
-                            // Close paywall modal
-                            paywallModal.remove();
-
-                            // Show success message
-                            showPurchaseSuccess();
-
-                            // Refresh user usage status
-                            await checkSubscriptionStatus();
-                        } else {
-                            throw new Error('Purchase completed but entitlement not found');
-                        }
-
-                    } catch (purchaseError) {
-                        console.error('Purchase error:', purchaseError);
-
-                        // Show error
-                        const errorElement = document.getElementById('payment-errors');
-                        if (errorElement) {
-                            if (purchaseError.userCancelled) {
-                                errorElement.textContent = 'Payment was cancelled.';
-                            } else {
-                                errorElement.textContent = 'Payment failed. Please try again.';
-                            }
-                        }
-
-                        // Reset payment form
-                        document.getElementById('payment-element').innerHTML = `
-                            <div style="
-                                border: 2px dashed #ddd;
-                                border-radius: 8px;
-                                padding: 2em;
-                                text-align: center;
-                                color: #666;
-                                background: #f9f9f9;
-                            ">
-                                <p>Ready to try again</p>
-                                <p style="font-size: 0.9em; margin-top: 0.5em;">Secure payment powered by Stripe</p>
-                            </div>
-                        `;
-
-                        // Reset button
-                        completeButton.textContent = 'Try Again';
-                        completeButton.disabled = false;
-                        completeButton.style.opacity = '1';
-                    }
-                };
-
-            } catch (loadError) {
-                console.error('Payment form load error:', loadError);
-
-                // Hide loading spinner
-                document.getElementById('loading-spinner').style.display = 'none';
-
-                // Show error
-                const errorElement = document.getElementById('payment-errors');
-                if (errorElement) {
-                    errorElement.textContent = 'Failed to load payment form. Please try again.';
-                }
-
-                // Show retry button
-                const completeButton = document.getElementById('complete-purchase');
-                completeButton.textContent = 'Retry';
-                completeButton.disabled = false;
-                completeButton.style.opacity = '1';
-                completeButton.onclick = () => showPaymentForm(packageToPurchase);
-            }
-        }, 1000); // Reduced loading time
+            // Refresh user usage status
+            await checkSubscriptionStatus();
+        } else {
+            throw new Error('Purchase completed but entitlement not found');
+        }
 
     } catch (error) {
-        console.error('Payment form initialization error:', error);
+        console.error('Purchase error:', error);
 
         // Hide loading spinner
-        document.getElementById('loading-spinner').style.display = 'none';
+        const loadingSpinner = document.getElementById('loading-spinner');
+        if (loadingSpinner) {
+            loadingSpinner.style.display = 'none';
+        }
 
-        // Show error
+        // Show payment form area with error
+        const paymentElement = document.getElementById('payment-element');
+        if (paymentElement) {
+            paymentElement.style.display = 'block';
+            paymentElement.innerHTML = `
+                <div style="
+                    border: 2px solid #e74c3c;
+                    border-radius: 8px;
+                    padding: 2em;
+                    text-align: center;
+                    color: #e74c3c;
+                    background: #fdf2f2;
+                ">
+                    <p>${error.userCancelled ? 'Payment was cancelled.' : 'Payment failed.'}</p>
+                    <p style="font-size: 0.9em; margin-top: 0.5em;">You can try again or contact support if the issue persists.</p>
+                </div>
+            `;
+        }
+
+        // Show error in errors section too
         const errorElement = document.getElementById('payment-errors');
         if (errorElement) {
-            errorElement.textContent = 'Failed to initialize payment. Please try again.';
+            if (error.userCancelled) {
+                errorElement.textContent = 'Payment was cancelled. You can try again anytime.';
+            } else {
+                errorElement.textContent = 'Payment failed. Please try again.';
+            }
+        }
+
+        // Enable retry button
+        const completeButton = document.getElementById('complete-purchase');
+        if (completeButton) {
+            completeButton.textContent = 'Try Again';
+            completeButton.disabled = false;
+            completeButton.style.opacity = '1';
+            completeButton.onclick = () => showPaymentForm(packageToPurchase);
         }
     }
 }
