@@ -1260,13 +1260,17 @@ async function showPaymentForm(packageToPurchase) {
 
         // Enable purchase button
         const completeButton = document.getElementById('complete-purchase');
+        console.log('Found complete button:', completeButton);
         if (completeButton) {
             completeButton.disabled = false;
             completeButton.style.opacity = '1';
+            completeButton.style.cursor = 'pointer';
             completeButton.textContent = 'Complete Purchase - $4.99/month';
+            console.log('Button enabled and text set');
 
             // Set up purchase button handler
             completeButton.onclick = async () => {
+                console.log('Complete Purchase button clicked!');
                 completeButton.textContent = 'Processing Payment...';
                 completeButton.disabled = true;
                 completeButton.style.opacity = '0.5';
