@@ -1100,73 +1100,9 @@ function setupActualPurchaseFlow() {
                     purchaseButton.textContent = 'Processing...';
                     purchaseButton.style.opacity = '0.7';
 
-                    // Create a target element for the payment form
-                    const paywallModal = document.getElementById('paywall-modal');
-                    if (paywallModal) {
-                        // Replace modal content with payment target
-                        paywallModal.innerHTML = `
-                            <style>
-                                .rcb-ui-container {
-                                    min-height: 500px !important;
-                                    height: auto !important;
-                                    width: 100% !important;
-                                    display: block !important;
-                                    position: relative !important;
-                                    overflow: visible !important;
-                                }
-                                .rcb-ui-container iframe {
-                                    min-height: 400px !important;
-                                    height: auto !important;
-                                    width: 100% !important;
-                                    display: block !important;
-                                    visibility: visible !important;
-                                    opacity: 1 !important;
-                                    position: relative !important;
-                                    z-index: 1 !important;
-                                    border: 1px solid #ddd !important;
-                                }
-                                .rcb-ui-sandbox-banner {
-                                    margin-bottom: 1em !important;
-                                }
-                                iframe[name*="privateStripeController"] {
-                                    display: block !important;
-                                    visibility: visible !important;
-                                    opacity: 1 !important;
-                                    min-height: 400px !important;
-                                    width: 100% !important;
-                                    border: 2px solid red !important;
-                                    background: white !important;
-                                }
-                                #revenuecat-payment-target * {
-                                    box-sizing: border-box !important;
-                                }
-                            </style>
-                            <div id="revenuecat-payment-target" style="
-                                background: white;
-                                padding: 2em;
-                                border-radius: 12px;
-                                width: 600px;
-                                min-height: 600px;
-                                margin: 2em;
-                                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-                                overflow: visible;
-                                display: flex;
-                                flex-direction: column;
-                            ">
-                                <h2 style="text-align: center; margin-bottom: 1em;">Complete Your Purchase</h2>
-                                <div style="text-align: center; color: #666; margin-bottom: 2em;">
-                                    Unlimited Audio Generation - $4.99/month
-                                </div>
-                                <!-- RevenueCat payment form will be inserted here -->
-                            </div>
-                        `;
-                    }
-
-                    // Call RevenueCat purchase with explicit target element
-                    const targetElement = document.getElementById('revenuecat-payment-target');
+                    // Call RevenueCat purchase without specifying target - let it handle the UI
                     const purchaseResult = await window.PurchasesInstance.purchase({
-                        rcPackage: packageToPurchase,
-                        htmlTarget: targetElement
+                        rcPackage: packageToPurchase
                     });
 
                     console.log('Purchase completed:', purchaseResult);
