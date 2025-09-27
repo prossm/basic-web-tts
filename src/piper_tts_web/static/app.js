@@ -1291,25 +1291,8 @@ async function showPaymentForm(packageToPurchase) {
                 completeButton.disabled = true;
                 completeButton.style.opacity = '0.5';
 
-                // Show loading in payment area
-                paymentElement.innerHTML = `
-                    <div style="
-                        padding: 2em;
-                        text-align: center;
-                        color: #666;
-                    ">
-                        <svg width="32" height="32" viewBox="0 0 24 24" style="margin-bottom: 1em;">
-                            <circle cx="12" cy="12" r="8" stroke="#007AFF" stroke-width="2" fill="none"
-                                    stroke-dasharray="50.27" stroke-dashoffset="50.27">
-                                <animate attributeName="stroke-dashoffset"
-                                         values="50.27;0;50.27"
-                                         dur="1.5s"
-                                         repeatCount="indefinite"/>
-                            </circle>
-                        </svg>
-                        <p style="margin: 0;">Opening secure payment form...</p>
-                    </div>
-                `;
+                // Don't cover the payment form - let user interact with Stripe elements
+                console.log('Payment form should be visible for user interaction');
 
                 try {
                     console.log('Awaiting purchase completion...');
