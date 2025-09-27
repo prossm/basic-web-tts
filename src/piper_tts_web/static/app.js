@@ -1114,8 +1114,24 @@ function setupActualPurchaseFlow() {
                                     height: calc(100vh - 4vh);
                                     margin: 2vh auto;
                                     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-                                    overflow: hidden;
+                                    overflow-y: auto;
+                                    overflow-x: hidden;
                                     box-sizing: border-box;
+                                }
+                                #revenuecat-payment-target * {
+                                    max-width: 100% !important;
+                                    box-sizing: border-box !important;
+                                }
+                                #revenuecat-payment-target iframe {
+                                    width: 100% !important;
+                                    max-width: 100% !important;
+                                    height: auto !important;
+                                    min-height: 400px !important;
+                                }
+                                .rcb-ui-container {
+                                    width: 100% !important;
+                                    max-width: 100% !important;
+                                    overflow-x: hidden !important;
                                 }
                                 @media (max-width: 768px) {
                                     #revenuecat-payment-target {
