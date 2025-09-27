@@ -842,16 +842,14 @@ async function checkSuperuserAndShowDashboardLink(user) {
 }
 
 // RevenueCat and Paywall functionality
-async function showPaywall(errorDetails) {
+function showPaywall(errorDetails) {
     console.log('showPaywall called with:', errorDetails);
     
-    // Remove any existing paywalls and payment elements to prevent conflicts
-    document.querySelectorAll('#paywall-modal, [id*="payment"], .modal').forEach(modal => {
-        modal.remove();
-    });
-
-    // Wait a moment for cleanup
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Remove only the existing paywall modal to prevent conflicts
+    const existingPaywall = document.getElementById('paywall-modal');
+    if (existingPaywall) {
+        existingPaywall.remove();
+    }
 
     const modal = document.createElement('div');
     modal.id = 'paywall-modal';
@@ -1136,8 +1134,8 @@ async function showPaymentForm(packageToPurchase) {
     const paywallModal = document.getElementById('paywall-modal');
     if (!paywallModal) return;
 
-    // Generate unique ID for this payment form
-    const paymentElementId = 'payment-element-' + Date.now();
+    // Use standard payment-element ID but ensure proper scoping within this modal
+    const paymentElementId = 'payment-element';
 
     // Create stable-sized payment form with loading state
     paywallModal.innerHTML = `
