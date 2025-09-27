@@ -1109,15 +1109,17 @@ function setupActualPurchaseFlow() {
                                 background: white;
                                 padding: 2em;
                                 border-radius: 12px;
-                                width: 500px;
-                                min-height: 400px;
+                                width: 600px;
+                                min-height: 600px;
                                 margin: 2em;
                                 box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                                overflow: visible;
                             ">
-                                <h2 style="text-align: center; margin-bottom: 1em;">Processing Payment...</h2>
-                                <div style="text-align: center; color: #666;">
-                                    Please wait while we set up your secure payment form.
+                                <h2 style="text-align: center; margin-bottom: 1em;">Complete Your Purchase</h2>
+                                <div style="text-align: center; color: #666; margin-bottom: 2em;">
+                                    Unlimited Audio Generation - $4.99/month
                                 </div>
+                                <!-- RevenueCat payment form will be inserted here -->
                             </div>
                         `;
                     }
