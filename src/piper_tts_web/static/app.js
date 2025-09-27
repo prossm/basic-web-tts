@@ -1096,8 +1096,33 @@ function setupActualPurchaseFlow() {
                 if (packageToPurchase) {
                     console.log('Purchasing package:', packageToPurchase);
 
-                    // Show payment form instead of directly purchasing
-                    await showPaymentForm(packageToPurchase);
+                    // Update button text to show processing
+                    purchaseButton.textContent = 'Processing...';
+                    purchaseButton.style.opacity = '0.7';
+
+                    // Call RevenueCat purchase directly - this will show the payment form
+                    const purchaseResult = await window.PurchasesInstance.purchase({
+                        rcPackage: packageToPurchase
+                    });
+
+                    console.log('Purchase completed:', purchaseResult);
+
+                    // Check if the purchase was successful
+                    if (purchaseResult.customerInfo.entitlements.active['premium']) {
+                        console.log('Purchase successful!');
+
+                        // Close paywall modal
+                        const paywallModal = document.getElementById('paywall-modal');
+                        if (paywallModal) paywallModal.remove();
+
+                        // Show success message
+                        showPurchaseSuccess();
+
+                        // Refresh user usage status
+                        await checkSubscriptionStatus();
+                    } else {
+                        throw new Error('Purchase completed but entitlement not found');
+                    }
                 } else {
                     throw new Error('No packages available for purchase');
                 }
@@ -1106,8 +1131,12 @@ function setupActualPurchaseFlow() {
                 console.error('Error details:', error.message);
                 console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
 
+                // Reset button state
+                purchaseButton.textContent = 'Upgrade Now - $4.99/month';
+                purchaseButton.style.opacity = '1';
+
                 // Show error message
-                if (error.userCancelled) {
+                if (error.userCancelled || (error.message && error.message.includes('cancelled'))) {
                     console.log('User cancelled purchase');
                 } else {
                     alert('Purchase failed. Please try again.');
@@ -1127,222 +1156,6 @@ function setupPlaceholderPurchase() {
     }
 }
 
-async function showPaymentForm(packageToPurchase) {
-    console.log('Showing payment form for package:', packageToPurchase);
-
-    // Replace the paywall content with payment form
-    const paywallModal = document.getElementById('paywall-modal');
-    if (!paywallModal) return;
-
-    // Use standard payment-element ID but ensure proper scoping within this modal
-    const paymentElementId = 'payment-element';
-
-    // Create stable-sized payment form with loading state
-    paywallModal.innerHTML = `
-        <div style="
-            background: white;
-            padding: 2em;
-            border-radius: 12px;
-            width: 500px;
-            min-height: 600px;
-            margin: 2em;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            display: flex;
-            flex-direction: column;
-        ">
-            <h2 style="color: #333; margin-bottom: 1em; flex-shrink: 0;">Complete Your Purchase</h2>
-            <p style="color: #666; margin-bottom: 1.5em; flex-shrink: 0;">
-                Unlimited Audio Generation - $4.99/month
-            </p>
-
-            <div id="payment-form-container" style="
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                margin: 2em 0;
-                position: relative;
-            ">
-                <div id="loading-spinner" style="
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                ">
-                    <svg width="48" height="48" viewBox="0 0 24 24" style="margin-bottom: 1em;">
-                        <circle cx="12" cy="12" r="10" stroke="#007AFF" stroke-width="2" fill="none"
-                                stroke-dasharray="62.83" stroke-dashoffset="62.83">
-                            <animate attributeName="stroke-dashoffset"
-                                     values="62.83;0;62.83"
-                                     dur="2s"
-                                     repeatCount="indefinite"/>
-                        </circle>
-                    </svg>
-                    <p style="color: #666; margin: 0;">Loading payment form...</p>
-                </div>
-
-                <div id="${paymentElementId}" style="
-                    display: none;
-                    width: 100%;
-                    text-align: left;
-                ">
-                    <!-- Stripe payment form will be inserted here -->
-                </div>
-
-                <div id="payment-errors" style="
-                    color: #e74c3c;
-                    margin-top: 1em;
-                    text-align: center;
-                    min-height: 1.5em;
-                "></div>
-            </div>
-
-            <div style="flex-shrink: 0;">
-                <button id="complete-purchase" style="
-                    background: #007AFF;
-                    color: white;
-                    padding: 1em 2em;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-weight: 500;
-                    width: 100%;
-                    margin-bottom: 1em;
-                    opacity: 0.5;
-                " disabled>
-                    Complete Purchase
-                </button>
-
-                <button id="cancel-purchase" style="
-                    background: #f0f0f0;
-                    border: none;
-                    padding: 0.8em 1.5em;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    color: #666;
-                ">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    `;
-
-    // Set up cancel button
-    document.getElementById('cancel-purchase').onclick = () => {
-        paywallModal.remove();
-    };
-
-    // Hide loading spinner and show purchase button
-    setTimeout(() => {
-        // Hide loading spinner
-        const loadingSpinner = document.getElementById('loading-spinner');
-        if (loadingSpinner) {
-            loadingSpinner.style.display = 'none';
-        }
-
-        // Show purchase button area (RevenueCat will handle payment form when purchase() is called)
-        const paymentElement = document.getElementById(paymentElementId);
-        if (paymentElement) {
-            paymentElement.style.display = 'block';
-            paymentElement.innerHTML = `
-                <div style="
-                    border: 2px dashed #007AFF;
-                    border-radius: 8px;
-                    padding: 2em;
-                    text-align: center;
-                    color: #007AFF;
-                    background: #f0f8ff;
-                ">
-                    <p style="margin: 0; font-weight: 500;">Ready to subscribe</p>
-                    <p style="font-size: 0.9em; margin: 0.5em 0 0 0; color: #666;">Click "Complete Purchase" to open the secure payment form</p>
-                </div>
-            `;
-        }
-
-        // Enable purchase button
-        const completeButton = document.getElementById('complete-purchase');
-        console.log('Found complete button:', completeButton);
-        if (completeButton) {
-            completeButton.disabled = false;
-            completeButton.style.opacity = '1';
-            completeButton.style.cursor = 'pointer';
-            completeButton.textContent = 'Complete Purchase - $4.99/month';
-            console.log('Button enabled and text set');
-
-            try {
-                // Set up purchase button handler
-                console.log('Setting up click handler...');
-                completeButton.onclick = async () => {
-                console.log('Complete Purchase button clicked!');
-
-                // Update button to show processing
-                completeButton.textContent = 'Processing Payment...';
-                completeButton.disabled = true;
-                completeButton.style.opacity = '0.5';
-
-                console.log('Processing payment through RevenueCat/Stripe...');
-
-                try {
-                    // Use correct RevenueCat Web SDK method
-                    console.log('Starting purchase with correct Web SDK method:', packageToPurchase);
-
-                    const purchaseResult = await window.PurchasesInstance.purchase({
-                        rcPackage: packageToPurchase
-                    });
-
-                    console.log('Purchase completed:', purchaseResult);
-
-                    // Check if the purchase was successful
-                    if (purchaseResult.customerInfo.entitlements.active['premium']) {
-                        // Purchase successful
-                        console.log('Purchase successful!');
-
-                        // Close paywall modal
-                        paywallModal.remove();
-
-                        // Show success message
-                        showPurchaseSuccess();
-
-                        // Refresh user usage status
-                        await checkSubscriptionStatus();
-                    } else {
-                        throw new Error('Purchase completed but entitlement not found');
-                    }
-
-                } catch (purchaseError) {
-                    console.error('Purchase error:', purchaseError);
-
-                    let errorMessage = 'Payment failed. Please try again.';
-                    let isUserCancelled = false;
-
-                    // Check for RevenueCat specific error types
-                    if (purchaseError.userCancelled || (purchaseError.message && purchaseError.message.includes('cancelled'))) {
-                        errorMessage = 'Payment was cancelled.';
-                        isUserCancelled = true;
-                    }
-
-                    // Show error message
-                    const errorElement = document.getElementById('payment-errors');
-                    if (errorElement) {
-                        errorElement.textContent = errorMessage;
-                    }
-
-                    // Reset button for retry
-                    completeButton.textContent = 'Try Again';
-                    completeButton.disabled = false;
-                    completeButton.style.opacity = '1';
-                }
-            };
-            console.log('Click handler set up successfully');
-
-            } catch (setupError) {
-                console.error('Error setting up click handler:', setupError);
-            }
-        }
-    }, 1500); // Show loading for 1.5 seconds
-}
 
 function showPurchaseSuccess() {
     // Remove any existing success modal
