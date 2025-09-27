@@ -1105,6 +1105,20 @@ function setupActualPurchaseFlow() {
                     if (paywallModal) {
                         // Replace modal content with payment target
                         paywallModal.innerHTML = `
+                            <style>
+                                .rcb-ui-container {
+                                    min-height: 400px !important;
+                                    height: auto !important;
+                                }
+                                .rcb-ui-container iframe {
+                                    min-height: 400px !important;
+                                    height: auto !important;
+                                    width: 100% !important;
+                                }
+                                #revenuecat-payment-target * {
+                                    box-sizing: border-box !important;
+                                }
+                            </style>
                             <div id="revenuecat-payment-target" style="
                                 background: white;
                                 padding: 2em;
@@ -1114,6 +1128,8 @@ function setupActualPurchaseFlow() {
                                 margin: 2em;
                                 box-shadow: 0 8px 32px rgba(0,0,0,0.2);
                                 overflow: visible;
+                                display: flex;
+                                flex-direction: column;
                             ">
                                 <h2 style="text-align: center; margin-bottom: 1em;">Complete Your Purchase</h2>
                                 <div style="text-align: center; color: #666; margin-bottom: 2em;">
