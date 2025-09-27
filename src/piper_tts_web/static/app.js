@@ -1284,19 +1284,37 @@ async function showPaymentForm(packageToPurchase) {
                 console.log('Setting up click handler...');
                 completeButton.onclick = async () => {
                 console.log('Complete Purchase button clicked!');
-                completeButton.textContent = 'Processing Payment...';
-                completeButton.disabled = true;
-                completeButton.style.opacity = '0.5';
 
-                // Don't cover the payment form - let user interact with Stripe elements
-                console.log('Payment form should be visible for user interaction');
+                // Hide the button and show instructions
+                completeButton.style.display = 'none';
+
+                // Add instruction message above the payment form
+                const paymentElement = document.getElementById(paymentElementId);
+                if (paymentElement && paymentElement.parentNode) {
+                    const instructionDiv = document.createElement('div');
+                    instructionDiv.id = 'payment-instructions';
+                    instructionDiv.style.cssText = `
+                        background: #e3f2fd;
+                        border: 1px solid #2196f3;
+                        border-radius: 8px;
+                        padding: 1em;
+                        margin-bottom: 1em;
+                        text-align: center;
+                        color: #1976d2;
+                    `;
+                    instructionDiv.innerHTML = `
+                        <p style="margin: 0; font-weight: 500;">💳 Please complete your payment</p>
+                        <p style="margin: 0.5em 0 0 0; font-size: 0.9em;">Fill out your payment details below and click the "Pay" button in the payment form to complete your purchase.</p>
+                    `;
+                    paymentElement.parentNode.insertBefore(instructionDiv, paymentElement);
+                }
+
+                console.log('Waiting for user to complete payment in Stripe form...');
 
                 try {
-                    console.log('Awaiting purchase completion...');
-
                     // Add timeout to prevent infinite hanging
                     const purchaseTimeout = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Purchase timeout after 5 minutes')), 5 * 60 * 1000);
+                        setTimeout(() => reject(new Error('Purchase timeout after 10 minutes')), 10 * 60 * 1000);
                     });
 
                     // Race between purchase completion and timeout
