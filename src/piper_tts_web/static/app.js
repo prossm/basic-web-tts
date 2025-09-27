@@ -1112,16 +1112,17 @@ function setupActualPurchaseFlow() {
                                     width: 100%;
                                     max-width: 800px;
                                     height: calc(100vh - 4vh);
-                                    margin: 2vh 0;
+                                    margin: 2vh auto;
                                     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
                                     overflow: hidden;
+                                    box-sizing: border-box;
                                 }
                                 @media (max-width: 768px) {
                                     #revenuecat-payment-target {
-                                        width: 100vw;
+                                        width: calc(100vw - 2vh);
                                         height: calc(100vh - 2vh);
-                                        margin: 1vh 0;
-                                        border-radius: 0;
+                                        margin: 1vh;
+                                        border-radius: 8px;
                                         max-width: none;
                                     }
                                 }
