@@ -1234,25 +1234,25 @@ async function showPaymentForm(packageToPurchase) {
         paywallModal.remove();
     };
 
-    // Start RevenueCat purchase immediately to create Stripe form
-    let purchasePromise;
+    // Store RevenueCat instance for later use, but don't start purchase yet
+    let purchasesInstance;
     try {
-        console.log('Starting RevenueCat purchase flow to create payment form...');
+        console.log('Preparing RevenueCat for payment form...');
 
         if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
             console.log('Using PurchasesInstance.purchasePackage');
-            purchasePromise = window.PurchasesInstance.purchasePackage(packageToPurchase);
+            purchasesInstance = window.PurchasesInstance;
         } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
             console.log('Using Purchases.Purchases.purchasePackage');
-            purchasePromise = window.Purchases.Purchases.purchasePackage(packageToPurchase);
+            purchasesInstance = window.Purchases.Purchases;
         } else if (typeof window.Purchases.purchasePackage === 'function') {
             console.log('Using Purchases.purchasePackage');
-            purchasePromise = window.Purchases.purchasePackage(packageToPurchase);
+            purchasesInstance = window.Purchases;
         } else {
             throw new Error('No valid purchasePackage method found');
         }
 
-        console.log('Purchase promise created:', purchasePromise);
+        console.log('RevenueCat instance ready for purchase');
 
         // Show loading for a bit, then hide spinner and show form area
         setTimeout(() => {
@@ -1285,33 +1285,18 @@ async function showPaymentForm(packageToPurchase) {
                 completeButton.onclick = async () => {
                 console.log('Complete Purchase button clicked!');
 
-                // Hide the button and show instructions
-                completeButton.style.display = 'none';
+                // Update button to show processing
+                completeButton.textContent = 'Processing Payment...';
+                completeButton.disabled = true;
+                completeButton.style.opacity = '0.5';
 
-                // Add instruction message above the payment form
-                const paymentElement = document.getElementById(paymentElementId);
-                if (paymentElement && paymentElement.parentNode) {
-                    const instructionDiv = document.createElement('div');
-                    instructionDiv.id = 'payment-instructions';
-                    instructionDiv.style.cssText = `
-                        background: #e3f2fd;
-                        border: 1px solid #2196f3;
-                        border-radius: 8px;
-                        padding: 1em;
-                        margin-bottom: 1em;
-                        text-align: center;
-                        color: #1976d2;
-                    `;
-                    instructionDiv.innerHTML = `
-                        <p style="margin: 0; font-weight: 500;">💳 Please complete your payment</p>
-                        <p style="margin: 0.5em 0 0 0; font-size: 0.9em;">Fill out your payment details below and click the "Pay" button in the payment form to complete your purchase.</p>
-                    `;
-                    paymentElement.parentNode.insertBefore(instructionDiv, paymentElement);
-                }
-
-                console.log('Waiting for user to complete payment in Stripe form...');
+                console.log('Processing payment through RevenueCat/Stripe...');
 
                 try {
+                    // Actually start the purchase now when user clicks
+                    console.log('Starting purchase with packageToPurchase:', packageToPurchase);
+                    const purchasePromise = purchasesInstance.purchasePackage(packageToPurchase);
+
                     // Add timeout to prevent infinite hanging
                     const purchaseTimeout = new Promise((_, reject) => {
                         setTimeout(() => reject(new Error('Purchase timeout after 10 minutes')), 10 * 60 * 1000);
