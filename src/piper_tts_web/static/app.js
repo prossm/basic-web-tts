@@ -842,20 +842,16 @@ async function checkSuperuserAndShowDashboardLink(user) {
 }
 
 // RevenueCat and Paywall functionality
-function showPaywall(errorDetails) {
+async function showPaywall(errorDetails) {
     console.log('showPaywall called with:', errorDetails);
     
-    // Remove any existing paywall
-    const existingPaywall = document.getElementById('paywall-modal');
-    if (existingPaywall) {
-        existingPaywall.remove();
-    }
+    // Remove any existing paywalls and payment elements to prevent conflicts
+    document.querySelectorAll('#paywall-modal, [id*="payment"], .modal').forEach(modal => {
+        modal.remove();
+    });
 
-    // Also remove any existing payment modals to prevent ID conflicts
-    const existingPaymentModal = document.querySelector('[id^="paywall-modal"]');
-    if (existingPaymentModal) {
-        existingPaymentModal.remove();
-    }
+    // Wait a moment for cleanup
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const modal = document.createElement('div');
     modal.id = 'paywall-modal';
@@ -1140,6 +1136,9 @@ async function showPaymentForm(packageToPurchase) {
     const paywallModal = document.getElementById('paywall-modal');
     if (!paywallModal) return;
 
+    // Generate unique ID for this payment form
+    const paymentElementId = 'payment-element-' + Date.now();
+
     // Create stable-sized payment form with loading state
     paywallModal.innerHTML = `
         <div style="
@@ -1186,7 +1185,7 @@ async function showPaymentForm(packageToPurchase) {
                     <p style="color: #666; margin: 0;">Loading payment form...</p>
                 </div>
 
-                <div id="payment-element" style="
+                <div id="${paymentElementId}" style="
                     display: none;
                     width: 100%;
                     text-align: left;
@@ -1266,7 +1265,7 @@ async function showPaymentForm(packageToPurchase) {
             }
 
             // Show payment form area - Stripe elements should appear here automatically
-            const paymentElement = document.getElementById('payment-element');
+            const paymentElement = document.getElementById(paymentElementId);
             if (paymentElement) {
                 paymentElement.style.display = 'block';
                 // Don't add placeholder content - let Stripe/RevenueCat populate this
@@ -1374,7 +1373,7 @@ async function showPaymentForm(packageToPurchase) {
                 loadingSpinner.style.display = 'none';
             }
 
-            const paymentElement = document.getElementById('payment-element');
+            const paymentElement = document.getElementById(paymentElementId);
             if (paymentElement) {
                 paymentElement.style.display = 'block';
                 paymentElement.innerHTML = `
