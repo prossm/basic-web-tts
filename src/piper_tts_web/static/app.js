@@ -1123,9 +1123,10 @@ function setupActualPurchaseFlow() {
                     }
 
                     // Call RevenueCat purchase with explicit target element
+                    const targetElement = document.getElementById('revenuecat-payment-target');
                     const purchaseResult = await window.PurchasesInstance.purchase({
                         rcPackage: packageToPurchase,
-                        htmlTarget: 'revenuecat-payment-target'
+                        htmlTarget: targetElement
                     });
 
                     console.log('Purchase completed:', purchaseResult);
@@ -1155,7 +1156,7 @@ function setupActualPurchaseFlow() {
                 console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
 
                 // Restore the original paywall modal
-                showPaywallModal();
+                showPaywall();
 
                 // Find the button again and reset its state
                 const resetButton = document.getElementById('rc-purchase-button');
