@@ -1100,9 +1100,35 @@ function setupActualPurchaseFlow() {
                     purchaseButton.textContent = 'Processing...';
                     purchaseButton.style.opacity = '0.7';
 
-                    // Call RevenueCat purchase without specifying target - let it handle the UI
+                    // Create a target element for the payment form
+                    const paywallModal = document.getElementById('paywall-modal');
+                    if (paywallModal) {
+                        // Replace modal content with payment target
+                        paywallModal.innerHTML = `
+                            <div id="revenuecat-payment-target" style="
+                                background: white;
+                                padding: 2em;
+                                border-radius: 12px;
+                                width: 500px;
+                                height: 500px;
+                                margin: 2em;
+                                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                                overflow: auto;
+                            ">
+                                <h2 style="text-align: center; margin-bottom: 1em;">Complete Your Purchase</h2>
+                                <div style="text-align: center; color: #666; margin-bottom: 2em;">
+                                    Unlimited Audio Generation - $4.99/month
+                                </div>
+                                <!-- RevenueCat payment form will be inserted here -->
+                            </div>
+                        `;
+                    }
+
+                    // Call RevenueCat purchase with explicit target element
+                    const targetElement = document.getElementById('revenuecat-payment-target');
                     const purchaseResult = await window.PurchasesInstance.purchase({
-                        rcPackage: packageToPurchase
+                        rcPackage: packageToPurchase,
+                        htmlTarget: targetElement
                     });
 
                     console.log('Purchase completed:', purchaseResult);
