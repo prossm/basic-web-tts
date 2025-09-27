@@ -1100,6 +1100,12 @@ function setupActualPurchaseFlow() {
                     purchaseButton.textContent = 'Processing...';
                     purchaseButton.style.opacity = '0.7';
 
+                    // Hide the paywall modal to allow the payment form to show
+                    const paywallModal = document.getElementById('paywall-modal');
+                    if (paywallModal) {
+                        paywallModal.style.display = 'none';
+                    }
+
                     // Call RevenueCat purchase directly - this will show the payment form
                     const purchaseResult = await window.PurchasesInstance.purchase({
                         rcPackage: packageToPurchase
@@ -1130,6 +1136,12 @@ function setupActualPurchaseFlow() {
                 console.error('Purchase failed:', error);
                 console.error('Error details:', error.message);
                 console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+
+                // Show the paywall modal again
+                const paywallModal = document.getElementById('paywall-modal');
+                if (paywallModal) {
+                    paywallModal.style.display = 'flex';
+                }
 
                 // Reset button state
                 purchaseButton.textContent = 'Upgrade Now - $4.99/month';
