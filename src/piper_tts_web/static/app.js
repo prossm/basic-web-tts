@@ -1234,40 +1234,32 @@ async function showPaymentForm(packageToPurchase) {
         paywallModal.remove();
     };
 
-    // Store RevenueCat instance for later use, but don't start purchase yet
-    let purchasesInstance;
-    try {
-        console.log('Preparing RevenueCat for payment form...');
-
-        if (window.PurchasesInstance && typeof window.PurchasesInstance.purchasePackage === 'function') {
-            console.log('Using PurchasesInstance.purchasePackage');
-            purchasesInstance = window.PurchasesInstance;
-        } else if (window.Purchases.Purchases && typeof window.Purchases.Purchases.purchasePackage === 'function') {
-            console.log('Using Purchases.Purchases.purchasePackage');
-            purchasesInstance = window.Purchases.Purchases;
-        } else if (typeof window.Purchases.purchasePackage === 'function') {
-            console.log('Using Purchases.purchasePackage');
-            purchasesInstance = window.Purchases;
-        } else {
-            throw new Error('No valid purchasePackage method found');
+    // Hide loading spinner and show purchase button
+    setTimeout(() => {
+        // Hide loading spinner
+        const loadingSpinner = document.getElementById('loading-spinner');
+        if (loadingSpinner) {
+            loadingSpinner.style.display = 'none';
         }
 
-        console.log('RevenueCat instance ready for purchase');
-
-        // Show loading for a bit, then hide spinner and show form area
-        setTimeout(() => {
-            // Hide loading spinner
-            const loadingSpinner = document.getElementById('loading-spinner');
-            if (loadingSpinner) {
-                loadingSpinner.style.display = 'none';
-            }
-
-            // Show payment form area - Stripe elements should appear here automatically
-            const paymentElement = document.getElementById(paymentElementId);
-            if (paymentElement) {
-                paymentElement.style.display = 'block';
-                // Don't add placeholder content - let Stripe/RevenueCat populate this
-            }
+        // Show purchase button area (RevenueCat will handle payment form when purchase() is called)
+        const paymentElement = document.getElementById(paymentElementId);
+        if (paymentElement) {
+            paymentElement.style.display = 'block';
+            paymentElement.innerHTML = `
+                <div style="
+                    border: 2px dashed #007AFF;
+                    border-radius: 8px;
+                    padding: 2em;
+                    text-align: center;
+                    color: #007AFF;
+                    background: #f0f8ff;
+                ">
+                    <p style="margin: 0; font-weight: 500;">Ready to subscribe</p>
+                    <p style="font-size: 0.9em; margin: 0.5em 0 0 0; color: #666;">Click "Complete Purchase" to open the secure payment form</p>
+                </div>
+            `;
+        }
 
         // Enable purchase button
         const completeButton = document.getElementById('complete-purchase');
@@ -1293,19 +1285,16 @@ async function showPaymentForm(packageToPurchase) {
                 console.log('Processing payment through RevenueCat/Stripe...');
 
                 try {
-                    // Actually start the purchase now when user clicks
-                    console.log('Starting purchase with packageToPurchase:', packageToPurchase);
-                    const purchasePromise = purchasesInstance.purchasePackage(packageToPurchase);
+                    // Use correct RevenueCat Web SDK method
+                    console.log('Starting purchase with correct Web SDK method:', packageToPurchase);
 
-                    // Add timeout to prevent infinite hanging
-                    const purchaseTimeout = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Purchase timeout after 10 minutes')), 10 * 60 * 1000);
+                    const purchaseResult = await Purchases.getSharedInstance().purchase({
+                        rcPackage: packageToPurchase
                     });
 
-                    // Race between purchase completion and timeout
-                    const purchaseResult = await Promise.race([purchasePromise, purchaseTimeout]);
                     console.log('Purchase completed:', purchaseResult);
 
+                    // Check if the purchase was successful
                     if (purchaseResult.customerInfo.entitlements.active['premium']) {
                         // Purchase successful
                         console.log('Purchase successful!');
@@ -1325,29 +1314,22 @@ async function showPaymentForm(packageToPurchase) {
                 } catch (purchaseError) {
                     console.error('Purchase error:', purchaseError);
 
-                    // Show error in payment form
-                    paymentElement.innerHTML = `
-                        <div style="
-                            border: 2px solid #e74c3c;
-                            border-radius: 8px;
-                            padding: 2em;
-                            text-align: center;
-                            color: #e74c3c;
-                            background: #fdf2f2;
-                        ">
-                            <p style="margin: 0;">${purchaseError.userCancelled ? 'Payment was cancelled.' : 'Payment failed.'}</p>
-                            <p style="font-size: 0.9em; margin: 0.5em 0 0 0; color: #666;">You can try again or contact support if needed.</p>
-                        </div>
-                    `;
+                    let errorMessage = 'Payment failed. Please try again.';
+                    let isUserCancelled = false;
+
+                    // Check for RevenueCat specific error types
+                    if (purchaseError instanceof PurchasesError && purchaseError.errorCode === ErrorCode.UserCancelledError) {
+                        errorMessage = 'Payment was cancelled.';
+                        isUserCancelled = true;
+                    } else if (purchaseError.userCancelled) {
+                        errorMessage = 'Payment was cancelled.';
+                        isUserCancelled = true;
+                    }
 
                     // Show error message
                     const errorElement = document.getElementById('payment-errors');
                     if (errorElement) {
-                        if (purchaseError.userCancelled) {
-                            errorElement.textContent = 'Payment was cancelled. You can try again anytime.';
-                        } else {
-                            errorElement.textContent = 'Payment failed. Please try again.';
-                        }
+                        errorElement.textContent = errorMessage;
                     }
 
                     // Reset button for retry
@@ -1363,44 +1345,6 @@ async function showPaymentForm(packageToPurchase) {
             }
         }
     }, 1500); // Show loading for 1.5 seconds
-
-    } catch (initError) {
-        console.error('Error initializing purchase:', initError);
-
-        // Hide loading spinner and show error
-        setTimeout(() => {
-            const loadingSpinner = document.getElementById('loading-spinner');
-            if (loadingSpinner) {
-                loadingSpinner.style.display = 'none';
-            }
-
-            const paymentElement = document.getElementById(paymentElementId);
-            if (paymentElement) {
-                paymentElement.style.display = 'block';
-                paymentElement.innerHTML = `
-                    <div style="
-                        border: 2px solid #e74c3c;
-                        border-radius: 8px;
-                        padding: 2em;
-                        text-align: center;
-                        color: #e74c3c;
-                        background: #fdf2f2;
-                    ">
-                        <p style="margin: 0;">Failed to initialize payment form</p>
-                        <p style="font-size: 0.9em; margin: 0.5em 0 0 0; color: #666;">Please try again or contact support</p>
-                    </div>
-                `;
-            }
-
-            const completeButton = document.getElementById('complete-purchase');
-            if (completeButton) {
-                completeButton.textContent = 'Retry';
-                completeButton.disabled = false;
-                completeButton.style.opacity = '1';
-                completeButton.onclick = () => showPaymentForm(packageToPurchase);
-            }
-        }, 1000);
-    }
 }
 
 function showPurchaseSuccess() {
