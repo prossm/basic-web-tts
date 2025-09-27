@@ -1288,7 +1288,7 @@ async function showPaymentForm(packageToPurchase) {
                     // Use correct RevenueCat Web SDK method
                     console.log('Starting purchase with correct Web SDK method:', packageToPurchase);
 
-                    const purchaseResult = await Purchases.getSharedInstance().purchase({
+                    const purchaseResult = await window.PurchasesInstance.purchase({
                         rcPackage: packageToPurchase
                     });
 
@@ -1318,10 +1318,7 @@ async function showPaymentForm(packageToPurchase) {
                     let isUserCancelled = false;
 
                     // Check for RevenueCat specific error types
-                    if (purchaseError instanceof PurchasesError && purchaseError.errorCode === ErrorCode.UserCancelledError) {
-                        errorMessage = 'Payment was cancelled.';
-                        isUserCancelled = true;
-                    } else if (purchaseError.userCancelled) {
+                    if (purchaseError.userCancelled || (purchaseError.message && purchaseError.message.includes('cancelled'))) {
                         errorMessage = 'Payment was cancelled.';
                         isUserCancelled = true;
                     }
