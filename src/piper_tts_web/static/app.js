@@ -1105,20 +1105,28 @@ function setupActualPurchaseFlow() {
                     if (paywallModal) {
                         // Replace modal content with payment target
                         paywallModal.innerHTML = `
-                            <div id="revenuecat-payment-target" style="
-                                background: white;
-                                padding: 2em;
-                                border-radius: 12px;
-                                width: 500px;
-                                height: 500px;
-                                margin: 2em;
-                                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-                                overflow: auto;
-                            ">
-                                <h2 style="text-align: center; margin-bottom: 1em;">Complete Your Purchase</h2>
-                                <div style="text-align: center; color: #666; margin-bottom: 2em;">
-                                    Unlimited Audio Generation - $4.99/month
-                                </div>
+                            <style>
+                                #revenuecat-payment-target {
+                                    background: white;
+                                    border-radius: 12px;
+                                    width: 100%;
+                                    max-width: 800px;
+                                    height: calc(100vh - 4vh);
+                                    margin: 2vh 0;
+                                    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                                    overflow: hidden;
+                                }
+                                @media (max-width: 768px) {
+                                    #revenuecat-payment-target {
+                                        width: 100vw;
+                                        height: calc(100vh - 2vh);
+                                        margin: 1vh 0;
+                                        border-radius: 0;
+                                        max-width: none;
+                                    }
+                                }
+                            </style>
+                            <div id="revenuecat-payment-target">
                                 <!-- RevenueCat payment form will be inserted here -->
                             </div>
                         `;
