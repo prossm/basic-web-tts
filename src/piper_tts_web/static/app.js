@@ -1107,13 +1107,35 @@ function setupActualPurchaseFlow() {
                         paywallModal.innerHTML = `
                             <style>
                                 .rcb-ui-container {
-                                    min-height: 400px !important;
+                                    min-height: 500px !important;
                                     height: auto !important;
+                                    width: 100% !important;
+                                    display: block !important;
+                                    position: relative !important;
+                                    overflow: visible !important;
                                 }
                                 .rcb-ui-container iframe {
                                     min-height: 400px !important;
                                     height: auto !important;
                                     width: 100% !important;
+                                    display: block !important;
+                                    visibility: visible !important;
+                                    opacity: 1 !important;
+                                    position: relative !important;
+                                    z-index: 1 !important;
+                                    border: 1px solid #ddd !important;
+                                }
+                                .rcb-ui-sandbox-banner {
+                                    margin-bottom: 1em !important;
+                                }
+                                iframe[name*="privateStripeController"] {
+                                    display: block !important;
+                                    visibility: visible !important;
+                                    opacity: 1 !important;
+                                    min-height: 400px !important;
+                                    width: 100% !important;
+                                    border: 2px solid red !important;
+                                    background: white !important;
                                 }
                                 #revenuecat-payment-target * {
                                     box-sizing: border-box !important;
