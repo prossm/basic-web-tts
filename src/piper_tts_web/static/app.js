@@ -1100,15 +1100,32 @@ function setupActualPurchaseFlow() {
                     purchaseButton.textContent = 'Processing...';
                     purchaseButton.style.opacity = '0.7';
 
-                    // Hide the paywall modal to allow the payment form to show
+                    // Create a target element for the payment form
                     const paywallModal = document.getElementById('paywall-modal');
                     if (paywallModal) {
-                        paywallModal.style.display = 'none';
+                        // Replace modal content with payment target
+                        paywallModal.innerHTML = `
+                            <div id="revenuecat-payment-target" style="
+                                background: white;
+                                padding: 2em;
+                                border-radius: 12px;
+                                width: 500px;
+                                min-height: 400px;
+                                margin: 2em;
+                                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                            ">
+                                <h2 style="text-align: center; margin-bottom: 1em;">Processing Payment...</h2>
+                                <div style="text-align: center; color: #666;">
+                                    Please wait while we set up your secure payment form.
+                                </div>
+                            </div>
+                        `;
                     }
 
-                    // Call RevenueCat purchase directly - this will show the payment form
+                    // Call RevenueCat purchase with explicit target element
                     const purchaseResult = await window.PurchasesInstance.purchase({
-                        rcPackage: packageToPurchase
+                        rcPackage: packageToPurchase,
+                        htmlTarget: 'revenuecat-payment-target'
                     });
 
                     console.log('Purchase completed:', purchaseResult);
@@ -1137,15 +1154,15 @@ function setupActualPurchaseFlow() {
                 console.error('Error details:', error.message);
                 console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
 
-                // Show the paywall modal again
-                const paywallModal = document.getElementById('paywall-modal');
-                if (paywallModal) {
-                    paywallModal.style.display = 'flex';
-                }
+                // Restore the original paywall modal
+                showPaywallModal();
 
-                // Reset button state
-                purchaseButton.textContent = 'Upgrade Now - $4.99/month';
-                purchaseButton.style.opacity = '1';
+                // Find the button again and reset its state
+                const resetButton = document.getElementById('rc-purchase-button');
+                if (resetButton) {
+                    resetButton.textContent = 'Upgrade Now - $4.99/month';
+                    resetButton.style.opacity = '1';
+                }
 
                 // Show error message
                 if (error.userCancelled || (error.message && error.message.includes('cancelled'))) {
