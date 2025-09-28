@@ -1108,15 +1108,15 @@ function setupActualPurchaseFlow() {
                             <style>
                                 #revenuecat-payment-target {
                                     background: white;
-                                    border-radius: 12px;
-                                    width: 100%;
-                                    max-width: 800px;
-                                    height: calc(100vh - 4vh);
-                                    margin: 2vh auto;
-                                    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                                    width: 100vw;
+                                    height: 100vh;
+                                    margin: 0;
                                     overflow: hidden;
                                     box-sizing: border-box;
-                                    position: relative;
+                                    position: fixed;
+                                    top: 0;
+                                    left: 0;
+                                    z-index: 2001;
                                 }
                                 #revenuecat-payment-target .rcb-ui-container {
                                     width: 100% !important;
@@ -1132,15 +1132,6 @@ function setupActualPurchaseFlow() {
                                     height: 100% !important;
                                     max-width: 100% !important;
                                     border: none !important;
-                                }
-                                @media (max-width: 768px) {
-                                    #revenuecat-payment-target {
-                                        width: calc(100vw - 2vh);
-                                        height: calc(100vh - 2vh);
-                                        margin: 1vh;
-                                        border-radius: 8px;
-                                        max-width: none;
-                                    }
                                 }
                             </style>
                             <div id="revenuecat-payment-target">
