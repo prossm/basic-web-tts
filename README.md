@@ -1,6 +1,10 @@
 # Piper TTS Web Interface
 
-See it live!: [BasicTTS.com](https://basictts.com)
+> [!NOTE]
+> **This project has been retired.** Basic TTS is no longer running as a live service, and the
+> code is no longer actively maintained. The repository is kept available as a reference for
+> anyone who wants to learn from it or build their own text-to-speech system. Thank you to
+> everyone who used it! 🎙️
 
 This is a simple web interface for [Piper Text-to-Speech](https://github.com/OHF-Voice/piper1-gpl) that provides a user-friendly way to convert text to speech using various voice models.
 

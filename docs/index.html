@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic TTS — Thank you</title>
+  <link rel="icon" href="favicon.png">
+  <meta name="description" content="Basic TTS has been retired. Thank you to everyone who used it. The source code remains open for anyone who wants to build their own text-to-speech system.">
+  <link rel="canonical" href="https://basictts.com/">
+  <meta property="og:title" content="Basic TTS — Thank you">
+  <meta property="og:description" content="Basic TTS has been retired. The source code is open if you'd like to build your own.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://basictts.com/">
+  <style>
+    :root {
+      --accent: #4a90e2;
+      --link: #337ab7;
+      --ink: #222;
+      --muted: #777;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background: #fafbfc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.25rem;
+      line-height: 1.6;
+    }
+    main {
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+    }
+    img.wordmark {
+      max-width: 300px;
+      width: 100%;
+      height: auto;
+      margin: 0 auto 2rem;
+      display: block;
+    }
+    h1 {
+      font-size: 1.7rem;
+      margin: 0 0 1rem;
+      font-weight: 700;
+    }
+    p { margin: 0 0 1.1rem; color: #444; }
+    .muted { color: var(--muted); font-size: 0.95rem; }
+    a { color: var(--link); font-weight: 500; }
+    .cta {
+      display: inline-block;
+      margin: 1rem 0 2rem;
+      padding: 0.7em 1.4em;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background 0.15s ease;
+    }
+    .cta:hover { background: #3b7bc4; }
+    hr {
+      border: none;
+      border-top: 1px solid #eaecef;
+      margin: 2rem 0 1.5rem;
+    }
+    footer { color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="wordmark" src="wordmark.png" alt="Basic TTS logo: speech bubble with sound waves and the words 'Basic TTS'">
+    <h1>Thank you for everything.</h1>
+    <p>
+      Basic TTS has been retired and is no longer running as a live service.
+      I'm grateful to everyone who used it to turn their words into speech.
+    </p>
+    <p>
+      The project was a simple web interface for <a href="https://github.com/OHF-Voice/piper1-gpl">Piper text-to-speech</a>,
+      and the full source code remains open. If you'd like to learn from it or build
+      your own system, you're welcome to it.
+    </p>
+    <a class="cta" href="https://github.com/prossm/basic-web-tts">Check out the codebase →</a>
+    <hr>
+    <footer>
+      Created by Patrick Metzger. Powered by Piper.
+    </footer>
+  </main>
+</body>
+</html>
